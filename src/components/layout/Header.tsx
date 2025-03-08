@@ -88,9 +88,11 @@ const Header = () => {
           to="/" 
           className="flex items-center transition-transform hover:scale-[1.02] active:scale-[0.98]"
         >
-          <span className="text-xl md:text-2xl font-display font-bold text-nitro-700">
-            NITRO<span className="text-nitro-500">GAMES</span>
-          </span>
+          <img 
+            src="/lovable-uploads/3452d003-b503-4079-8026-b61a6a18b8d7.png" 
+            alt="Nitrogames Logo" 
+            className="h-10" 
+          />
         </Link>
 
         {/* Desktop Navigation */}

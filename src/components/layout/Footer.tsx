@@ -11,9 +11,11 @@ const Footer = () => {
           {/* Company Info */}
           <div className="space-y-4">
             <Link to="/" className="inline-block">
-              <span className="text-xl font-display font-bold text-nitro-700">
-                NITRO<span className="text-nitro-500">GAMES</span>
-              </span>
+              <img 
+                src="/lovable-uploads/3452d003-b503-4079-8026-b61a6a18b8d7.png" 
+                alt="Nitrogames Logo" 
+                className="h-10" 
+              />
             </Link>
             <p className="text-gray-600 text-sm">
               We provide a safe and secure platform for gamers to trade virtual goods and access premium boosting services.
@@ -81,16 +83,31 @@ const Footer = () => {
               Support
             </h3>
             <ul className="space-y-2">
-              {['FAQ', 'Privacy Policy', 'Terms of Service', 'Refund Policy', 'Contact Support'].map(item => (
-                <li key={item}>
-                  <Link 
-                    to="/contact"
-                    className="text-gray-600 hover:text-nitro-500 transition-colors text-sm"
-                  >
-                    {item}
-                  </Link>
-                </li>
-              ))}
+              <li>
+                <Link to="/faq" className="text-gray-600 hover:text-nitro-500 transition-colors text-sm">
+                  FAQ
+                </Link>
+              </li>
+              <li>
+                <Link to="/privacy-policy" className="text-gray-600 hover:text-nitro-500 transition-colors text-sm">
+                  Privacy Policy
+                </Link>
+              </li>
+              <li>
+                <Link to="/terms-of-service" className="text-gray-600 hover:text-nitro-500 transition-colors text-sm">
+                  Terms of Service
+                </Link>
+              </li>
+              <li>
+                <Link to="/refund-policy" className="text-gray-600 hover:text-nitro-500 transition-colors text-sm">
+                  Refund Policy
+                </Link>
+              </li>
+              <li>
+                <Link to="/contact" className="text-gray-600 hover:text-nitro-500 transition-colors text-sm">
+                  Contact Support
+                </Link>
+              </li>
             </ul>
           </div>
         </div>
