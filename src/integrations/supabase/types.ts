@@ -9,7 +9,110 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      cart_items: {
+        Row: {
+          created_at: string
+          id: string
+          option_id: string
+          option_name: string
+          price: number
+          service_id: string
+          service_title: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          option_id: string
+          option_name: string
+          price: number
+          service_id: string
+          service_title: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          option_id?: string
+          option_name?: string
+          price?: number
+          service_id?: string
+          service_title?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      order_items: {
+        Row: {
+          created_at: string
+          id: string
+          option_id: string
+          option_name: string
+          order_id: string
+          price: number
+          service_id: string
+          service_title: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          option_id: string
+          option_name: string
+          order_id: string
+          price: number
+          service_id: string
+          service_title: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          option_id?: string
+          option_name?: string
+          order_id?: string
+          price?: number
+          service_id?: string
+          service_title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          created_at: string
+          id: string
+          payment_intent_id: string | null
+          status: string
+          total_amount: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          payment_intent_id?: string | null
+          status?: string
+          total_amount: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          payment_intent_id?: string | null
+          status?: string
+          total_amount?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

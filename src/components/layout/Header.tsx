@@ -1,13 +1,40 @@
 
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, ShoppingCart } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Menu, X, ShoppingCart, User, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useCart } from '@/contexts/CartContext';
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [user, setUser] = useState<any>(null);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { items } = useCart();
+  const { toast } = useToast();
+
+  // Check if user is signed in
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      const { data } = await supabase.auth.getSession();
+      setUser(data.session?.user || null);
+    };
+    
+    getCurrentUser();
+    
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setUser(session?.user || null);
+      }
+    );
+    
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   // Track scroll position for header styling
   useEffect(() => {
@@ -23,6 +50,22 @@ const Header = () => {
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [location.pathname]);
+
+  const handleSignOut = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast({
+        title: "Signed out successfully",
+      });
+      navigate('/');
+    } catch (error: any) {
+      toast({
+        title: "Error signing out",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
 
   const menuItems = [
     { name: 'Home', path: '/' },
@@ -66,11 +109,45 @@ const Header = () => {
             </Link>
           ))}
           
-          <div className="ml-4">
-            <Button className="btn-primary flex items-center">
-              <ShoppingCart className="mr-2 h-4 w-4" />
-              Cart
-            </Button>
+          <div className="ml-4 flex items-center space-x-2">
+            {user ? (
+              <div className="flex items-center space-x-2">
+                <Button 
+                  variant="outline" 
+                  className="flex items-center" 
+                  onClick={handleSignOut}
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sign Out
+                </Button>
+                <Link to="/cart">
+                  <Button className="btn-primary flex items-center relative">
+                    <ShoppingCart className="mr-2 h-4 w-4" />
+                    Cart
+                    {items.length > 0 && (
+                      <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                        {items.length}
+                      </span>
+                    )}
+                  </Button>
+                </Link>
+              </div>
+            ) : (
+              <div className="flex items-center space-x-2">
+                <Link to="/auth">
+                  <Button variant="outline" className="flex items-center">
+                    <User className="mr-2 h-4 w-4" />
+                    Sign In
+                  </Button>
+                </Link>
+                <Link to="/auth">
+                  <Button className="btn-primary flex items-center">
+                    <ShoppingCart className="mr-2 h-4 w-4" />
+                    Cart
+                  </Button>
+                </Link>
+              </div>
+            )}
           </div>
         </nav>
 
@@ -108,11 +185,40 @@ const Header = () => {
             </Link>
           ))}
           
-          <div className="mt-6">
-            <Button className="w-full btn-primary flex items-center justify-center">
-              <ShoppingCart className="mr-2 h-4 w-4" />
-              Cart
-            </Button>
+          <div className="mt-6 space-y-3">
+            {user ? (
+              <>
+                <Link to="/cart" className="w-full">
+                  <Button className="w-full btn-primary flex items-center justify-center">
+                    <ShoppingCart className="mr-2 h-4 w-4" />
+                    Cart {items.length > 0 && `(${items.length})`}
+                  </Button>
+                </Link>
+                <Button 
+                  variant="outline" 
+                  className="w-full flex items-center justify-center" 
+                  onClick={handleSignOut}
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sign Out
+                </Button>
+              </>
+            ) : (
+              <>
+                <Link to="/auth" className="w-full">
+                  <Button className="w-full btn-primary flex items-center justify-center">
+                    <User className="mr-2 h-4 w-4" />
+                    Sign In
+                  </Button>
+                </Link>
+                <Link to="/auth" className="w-full">
+                  <Button variant="outline" className="w-full flex items-center justify-center">
+                    <ShoppingCart className="mr-2 h-4 w-4" />
+                    View Cart
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>

@@ -1,11 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
 import { Star, ShoppingCart, Clock, Shield, Trophy, Check, ChevronDown, ChevronUp } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
+import { useCart } from '@/contexts/CartContext';
+import { supabase } from "@/integrations/supabase/client";
 
 // Sample service data
 const services = [
@@ -83,6 +85,29 @@ const ServiceDetail = () => {
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
   const [mainImage, setMainImage] = useState(service?.image);
   const { toast } = useToast();
+  const { addItem } = useCart();
+  const navigate = useNavigate();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // Check if user is logged in
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data } = await supabase.auth.getSession();
+      setIsLoggedIn(!!data.session);
+    };
+    
+    checkAuth();
+    
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setIsLoggedIn(!!session);
+      }
+    );
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   // Scroll to top on component mount
   useEffect(() => {
@@ -102,11 +127,24 @@ const ServiceDetail = () => {
     }
   }, [service]);
 
-  const handleAddToCart = () => {
-    if (service && selectedOption) {
+  const handleAddToCart = async () => {
+    if (!isLoggedIn) {
       toast({
-        title: "Added to cart",
-        description: `${service.title} - ${selectedOption.name} has been added to your cart.`,
+        title: 'Sign in required',
+        description: 'Please sign in to add items to your cart.',
+        variant: 'destructive',
+      });
+      navigate('/auth');
+      return;
+    }
+
+    if (service && selectedOption) {
+      await addItem({
+        service_id: service.id,
+        service_title: service.title,
+        option_id: selectedOption.id,
+        option_name: selectedOption.name,
+        price: selectedOption.price
       });
     }
   };
