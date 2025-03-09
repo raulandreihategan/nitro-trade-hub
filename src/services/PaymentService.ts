@@ -39,10 +39,10 @@ export class PaymentService {
     try {
       const { data, error } = await supabase.functions.invoke('moto-payment', {
         body: {
+          action: 'create-order',
           ...orderData,
         },
         method: 'POST',
-        path: 'create-order',
       });
 
       if (error) throw error;
@@ -64,9 +64,11 @@ export class PaymentService {
   } = {}) {
     try {
       const { data, error } = await supabase.functions.invoke('moto-payment', {
-        body: filters,
+        body: {
+          action: 'orders-list',
+          ...filters
+        },
         method: 'POST',
-        path: 'orders-list',
       });
 
       if (error) throw error;
@@ -84,9 +86,11 @@ export class PaymentService {
   static async cancelOrder(orderId: number) {
     try {
       const { data, error } = await supabase.functions.invoke('moto-payment', {
-        body: { orderId },
+        body: { 
+          action: 'cancel-order',
+          orderId 
+        },
         method: 'POST',
-        path: 'cancel-order',
       });
 
       if (error) throw error;
@@ -105,9 +109,12 @@ export class PaymentService {
   static async refundOrder(orderId: number, amount: string) {
     try {
       const { data, error } = await supabase.functions.invoke('moto-payment', {
-        body: { orderId, amount },
+        body: { 
+          action: 'refund-order',
+          orderId, 
+          amount 
+        },
         method: 'POST',
-        path: 'refund-order',
       });
 
       if (error) throw error;

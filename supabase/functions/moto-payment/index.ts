@@ -162,9 +162,6 @@ serve(async (req) => {
       throw new Error("MOTO API credentials are not set");
     }
 
-    const url = new URL(req.url);
-    const path = url.pathname.split("/").pop();
-    
     // Get the request body
     let body = {};
     try {
@@ -173,17 +170,26 @@ serve(async (req) => {
       // If there's no body or it's not JSON, continue with empty object
     }
 
+    const action = body.action;
+    if (!action) {
+      throw new Error("Action is required");
+    }
+
     // Get access token
     const token = await getAccessToken(MOTO_API_KEY, MOTO_API_SECRET);
 
     let result;
 
-    switch (path) {
+    switch (action) {
       case "create-order":
-        result = await createOrder(token, body);
+        // Remove the action from the body before passing to the API
+        const { action: _, ...orderData } = body;
+        result = await createOrder(token, orderData);
         break;
       case "orders-list":
-        result = await getOrdersList(token, body);
+        // Remove action from filters
+        const { action: __, ...filters } = body;
+        result = await getOrdersList(token, filters);
         break;
       case "cancel-order":
         if (!body.orderId) {
@@ -198,7 +204,7 @@ serve(async (req) => {
         result = await refundOrder(token, body.orderId, body.amount);
         break;
       default:
-        throw new Error("Invalid endpoint");
+        throw new Error("Invalid action");
     }
 
     return new Response(JSON.stringify(result), {
