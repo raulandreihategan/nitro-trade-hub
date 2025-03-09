@@ -31,46 +31,8 @@ const Cart = () => {
         return;
       }
       
-      // Create an order
-      const { data: order, error: orderError } = await supabase
-        .from('orders')
-        .insert({
-          user_id: session.user.id,
-          total_amount: totalPrice,
-          status: 'pending'
-        })
-        .select()
-        .single();
-      
-      if (orderError) throw orderError;
-      
-      // Add order items
-      const orderItems = items.map(item => ({
-        order_id: order.id,
-        service_id: item.service_id,
-        service_title: item.service_title,
-        option_id: item.option_id,
-        option_name: item.option_name,
-        price: item.price
-      }));
-      
-      const { error: itemsError } = await supabase
-        .from('order_items')
-        .insert(orderItems);
-      
-      if (itemsError) throw itemsError;
-      
-      // Clear the cart
-      await clearCart();
-      
-      // Show success message
-      toast({
-        title: 'Order placed successfully',
-        description: 'Your order has been placed and is being processed.',
-      });
-      
-      // Redirect to success page
-      navigate('/order-success', { state: { orderId: order.id } });
+      // Navigate to the checkout page
+      navigate('/checkout');
     } catch (error: any) {
       console.error('Error during checkout:', error);
       toast({
@@ -169,7 +131,7 @@ const Cart = () => {
                     disabled={isCheckingOut}
                     className="w-full"
                   >
-                    {isCheckingOut ? 'Processing...' : 'Checkout'}
+                    {isCheckingOut ? 'Processing...' : 'Proceed to Checkout'}
                     {!isCheckingOut && <ArrowRight className="ml-2 h-4 w-4" />}
                   </Button>
                 </div>
