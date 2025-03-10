@@ -1,35 +1,34 @@
-
 import React, { useState, useEffect } from 'react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
 import { Mail, MessageSquare, Phone, MapPin, Send } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
-
 const Contact = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
 
   // Scroll to top on component mount
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
+
     // Simulate form submission
     setTimeout(() => {
       toast({
         title: "Message sent",
-        description: "We've received your message and will get back to you soon!",
+        description: "We've received your message and will get back to you soon!"
       });
-      
+
       // Reset form
       setName('');
       setEmail('');
@@ -38,9 +37,7 @@ const Contact = () => {
       setIsSubmitting(false);
     }, 1500);
   };
-
-  return (
-    <div className="min-h-screen flex flex-col">
+  return <div className="min-h-screen flex flex-col">
       <Header />
       
       <main className="flex-grow pt-24">
@@ -93,8 +90,8 @@ const Contact = () => {
                       <Phone className="h-6 w-6 text-nitro-500 mt-0.5 mr-4" />
                       <div>
                         <h3 className="font-medium text-gray-900">Phone</h3>
-                        <p className="text-gray-600 mt-1">+1 (555) 123-4567</p>
-                        <p className="text-gray-600">Mon-Fri, 9AM-6PM EST</p>
+                        <p className="text-gray-600 mt-1">+34 644 98 23 27</p>
+                        <p className="text-gray-600">Mon-Fri, 9AM-6PM CEST</p>
                       </div>
                     </div>
                     
@@ -102,8 +99,9 @@ const Contact = () => {
                       <MapPin className="h-6 w-6 text-nitro-500 mt-0.5 mr-4" />
                       <div>
                         <h3 className="font-medium text-gray-900">Headquarters</h3>
-                        <p className="text-gray-600 mt-1">123 Gaming Street</p>
-                        <p className="text-gray-600">New York, NY 10001</p>
+                        <p className="text-gray-600 mt-1">Barcelona</p>
+                        <p className="text-gray-600">
+                      </p>
                       </div>
                     </div>
                   </div>
@@ -147,30 +145,14 @@ const Contact = () => {
                         <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
                           Your Name <span className="text-red-500">*</span>
                         </label>
-                        <input
-                          type="text"
-                          id="name"
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-nitro-500 focus:border-nitro-500"
-                          placeholder="John Doe"
-                          required
-                          value={name}
-                          onChange={(e) => setName(e.target.value)}
-                        />
+                        <input type="text" id="name" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-nitro-500 focus:border-nitro-500" placeholder="John Doe" required value={name} onChange={e => setName(e.target.value)} />
                       </div>
                       
                       <div>
                         <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                           Email Address <span className="text-red-500">*</span>
                         </label>
-                        <input
-                          type="email"
-                          id="email"
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-nitro-500 focus:border-nitro-500"
-                          placeholder="your@email.com"
-                          required
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                        />
+                        <input type="email" id="email" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-nitro-500 focus:border-nitro-500" placeholder="your@email.com" required value={email} onChange={e => setEmail(e.target.value)} />
                       </div>
                     </div>
                     
@@ -178,52 +160,28 @@ const Contact = () => {
                       <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-1">
                         Subject <span className="text-red-500">*</span>
                       </label>
-                      <input
-                        type="text"
-                        id="subject"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-nitro-500 focus:border-nitro-500"
-                        placeholder="How can we help you?"
-                        required
-                        value={subject}
-                        onChange={(e) => setSubject(e.target.value)}
-                      />
+                      <input type="text" id="subject" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-nitro-500 focus:border-nitro-500" placeholder="How can we help you?" required value={subject} onChange={e => setSubject(e.target.value)} />
                     </div>
                     
                     <div>
                       <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1">
                         Message <span className="text-red-500">*</span>
                       </label>
-                      <textarea
-                        id="message"
-                        rows={5}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg resize-none focus:ring-nitro-500 focus:border-nitro-500"
-                        placeholder="Type your message here..."
-                        required
-                        value={message}
-                        onChange={(e) => setMessage(e.target.value)}
-                      />
+                      <textarea id="message" rows={5} className="w-full px-4 py-2 border border-gray-300 rounded-lg resize-none focus:ring-nitro-500 focus:border-nitro-500" placeholder="Type your message here..." required value={message} onChange={e => setMessage(e.target.value)} />
                     </div>
                     
                     <div>
-                      <Button 
-                        type="submit" 
-                        className="w-full md:w-auto"
-                        disabled={isSubmitting}
-                      >
-                        {isSubmitting ? (
-                          <span className="flex items-center">
+                      <Button type="submit" className="w-full md:w-auto" disabled={isSubmitting}>
+                        {isSubmitting ? <span className="flex items-center">
                             <svg className="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
                             Sending...
-                          </span>
-                        ) : (
-                          <span className="flex items-center">
+                          </span> : <span className="flex items-center">
                             <Send className="mr-2 h-4 w-4" />
                             Send Message
-                          </span>
-                        )}
+                          </span>}
                       </Button>
                     </div>
                   </form>
@@ -250,33 +208,25 @@ const Contact = () => {
             
             <div className="max-w-3xl mx-auto">
               <div className="space-y-6">
-                {[
-                  {
-                    question: "How do I purchase a service?",
-                    answer: "Simply browse our services, select the one you need, customize it according to your requirements, and proceed to checkout. We accept various payment methods including credit cards, PayPal, and cryptocurrency."
-                  },
-                  {
-                    question: "Is my account safe with your boosters?",
-                    answer: "Absolutely! We take security very seriously. All our boosters are verified professionals who follow strict security protocols. We also use VPN protection to ensure your account's safety."
-                  },
-                  {
-                    question: "How long does it take to complete a boost?",
-                    answer: "The completion time varies depending on the service and your specific requirements. Each service page provides an estimated completion time, and we always strive to deliver as quickly as possible without compromising quality."
-                  },
-                  {
-                    question: "Can I track the progress of my order?",
-                    answer: "Yes, once your order is in progress, you'll have access to a dedicated tracking page where you can see real-time updates on your order status."
-                  },
-                  {
-                    question: "What if I'm not satisfied with the service?",
-                    answer: "We have a satisfaction guarantee policy. If you're not happy with our service, please contact our support team, and we'll do our best to resolve any issues or provide a refund if necessary."
-                  }
-                ].map((faq, index) => (
-                  <div key={index} className="bg-gray-50 rounded-lg p-6">
+                {[{
+                question: "How do I purchase a service?",
+                answer: "Simply browse our services, select the one you need, customize it according to your requirements, and proceed to checkout. We accept various payment methods including credit cards, PayPal, and cryptocurrency."
+              }, {
+                question: "Is my account safe with your boosters?",
+                answer: "Absolutely! We take security very seriously. All our boosters are verified professionals who follow strict security protocols. We also use VPN protection to ensure your account's safety."
+              }, {
+                question: "How long does it take to complete a boost?",
+                answer: "The completion time varies depending on the service and your specific requirements. Each service page provides an estimated completion time, and we always strive to deliver as quickly as possible without compromising quality."
+              }, {
+                question: "Can I track the progress of my order?",
+                answer: "Yes, once your order is in progress, you'll have access to a dedicated tracking page where you can see real-time updates on your order status."
+              }, {
+                question: "What if I'm not satisfied with the service?",
+                answer: "We have a satisfaction guarantee policy. If you're not happy with our service, please contact our support team, and we'll do our best to resolve any issues or provide a refund if necessary."
+              }].map((faq, index) => <div key={index} className="bg-gray-50 rounded-lg p-6">
                     <h3 className="text-lg font-medium text-gray-900 mb-2">{faq.question}</h3>
                     <p className="text-gray-600">{faq.answer}</p>
-                  </div>
-                ))}
+                  </div>)}
               </div>
             </div>
           </div>
@@ -284,8 +234,6 @@ const Contact = () => {
       </main>
       
       <Footer />
-    </div>
-  );
+    </div>;
 };
-
 export default Contact;
