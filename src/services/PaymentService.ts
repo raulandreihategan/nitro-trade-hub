@@ -44,7 +44,6 @@ export class PaymentService {
           action: 'create-order',
           ...orderData,
         },
-        method: 'POST',
       });
 
       if (error) {
@@ -75,7 +74,6 @@ export class PaymentService {
           action: 'orders-list',
           ...filters
         },
-        method: 'POST',
       });
 
       if (error) throw error;
@@ -97,7 +95,6 @@ export class PaymentService {
           action: 'cancel-order',
           orderId 
         },
-        method: 'POST',
       });
 
       if (error) throw error;
@@ -121,7 +118,6 @@ export class PaymentService {
           orderId, 
           amount 
         },
-        method: 'POST',
       });
 
       if (error) throw error;
