@@ -39,7 +39,7 @@ export class PaymentService {
     try {
       console.log('Creating payment order with data:', orderData);
       
-      // Deep clean the orderData to remove undefined values and objects with "_type": "undefined"
+      // Deep clean the orderData to remove undefined values, null values, and objects with "_type": "undefined"
       const cleanedOrderData = JSON.parse(JSON.stringify(orderData, (key, value) => {
         // Check if this is a special undefined object created by some frameworks
         if (value && typeof value === 'object' && value._type === 'undefined') {
@@ -53,8 +53,12 @@ export class PaymentService {
         Object.keys(obj).forEach(key => {
           if (obj[key] === undefined || obj[key] === null) {
             delete obj[key];
-          } else if (typeof obj[key] === 'object') {
+          } else if (typeof obj[key] === 'object' && obj[key] !== null) {
             cleanNestedObject(obj[key]);
+            // Remove empty objects
+            if (Object.keys(obj[key]).length === 0) {
+              delete obj[key];
+            }
           }
         });
         return obj;
@@ -74,6 +78,24 @@ export class PaymentService {
 
       if (error) {
         console.error('Supabase function error:', error);
+        // Enhance the koUrl with error information if possible
+        if (finalOrderData.OrdersApiData && finalOrderData.OrdersApiData.koUrl) {
+          let errorMessage = error.message || "Payment processing failed";
+          
+          // Create a URL object to manipulate the URL
+          const koUrl = new URL(finalOrderData.OrdersApiData.koUrl);
+          
+          // Add error as a URL parameter, properly encoded
+          const errorObj = {
+            error: errorMessage,
+            details: "Please check with support or try again"
+          };
+          koUrl.searchParams.set('error', encodeURIComponent(JSON.stringify(errorObj)));
+          
+          // Redirect to the enhanced failure URL
+          window.location.href = koUrl.toString();
+          return null;
+        }
         throw error;
       }
       

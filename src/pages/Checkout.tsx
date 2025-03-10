@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Header from '@/components/layout/Header';
@@ -9,7 +8,7 @@ import { useCart } from '@/contexts/CartContext';
 import { useToast } from "@/hooks/use-toast";
 import { PaymentService } from '@/services/PaymentService';
 import { supabase } from "@/integrations/supabase/client";
-import { CreditCard, ChevronRight, ChevronLeft, Info } from 'lucide-react';
+import { CreditCard, ChevronRight, ChevronLeft, Info, Loader2 } from 'lucide-react';
 
 const Checkout = () => {
   const { items, totalPrice, clearCart } = useCart();
@@ -28,6 +27,7 @@ const Checkout = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
+  const stateParams = location.state as { bypassEmptyCartCheck?: boolean, orderId?: string } | null;
 
   // Check if user is signed in
   useEffect(() => {
@@ -49,10 +49,10 @@ const Checkout = () => {
 
   // Redirect to login if not authenticated
   useEffect(() => {
-    if (items.length === 0 && !location.state?.bypassEmptyCartCheck) {
+    if (items.length === 0 && !(stateParams?.bypassEmptyCartCheck)) {
       navigate('/cart');
     }
-  }, [items, navigate, location]);
+  }, [items, navigate, stateParams]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -67,43 +67,62 @@ const Checkout = () => {
     
     try {
       setIsProcessing(true);
+      
+      let orderId = stateParams?.orderId;
+      let order;
 
-      // First save the order to our database
-      const { data: order, error: orderError } = await supabase
-        .from('orders')
-        .insert({
-          user_id: user?.id,
-          total_amount: totalPrice,
-          status: 'pending'
-        })
-        .select()
-        .single();
-      
-      if (orderError) throw orderError;
-      
-      // Add order items
-      const orderItems = items.map(item => ({
-        order_id: order.id,
-        service_id: item.service_id,
-        service_title: item.service_title,
-        option_id: item.option_id,
-        option_name: item.option_name,
-        price: item.price
-      }));
-      
-      const { error: itemsError } = await supabase
-        .from('order_items')
-        .insert(orderItems);
-      
-      if (itemsError) throw itemsError;
+      // If we don't have an orderId from state, create a new order
+      if (!orderId) {
+        // First save the order to our database
+        const { data: newOrder, error: orderError } = await supabase
+          .from('orders')
+          .insert({
+            user_id: user?.id,
+            total_amount: totalPrice,
+            status: 'pending'
+          })
+          .select()
+          .single();
+        
+        if (orderError) throw orderError;
+        
+        order = newOrder;
+        orderId = newOrder.id;
+        
+        // Add order items
+        const orderItems = items.map(item => ({
+          order_id: orderId,
+          service_id: item.service_id,
+          service_title: item.service_title,
+          option_id: item.option_id,
+          option_name: item.option_name,
+          price: item.price
+        }));
+        
+        const { error: itemsError } = await supabase
+          .from('order_items')
+          .insert(orderItems);
+        
+        if (itemsError) throw itemsError;
+      } else {
+        // Get the existing order data
+        const { data: existingOrder, error: getOrderError } = await supabase
+          .from('orders')
+          .select('*')
+          .eq('id', orderId)
+          .single();
+          
+        if (getOrderError) throw getOrderError;
+        order = existingOrder;
+      }
 
       // Create payment URL with MOTO API
       const paymentResult = await PaymentService.createOrder({
         Orders: {
           terminal_id: 1, // Default terminal ID
-          amount: totalPrice.toString(),
+          amount: order.total_amount.toString(),
           lang: 2, // English
-          merchant_order_description: `Order ${order.id} on Nitrogames`,
+          merchant_order_description: `Order ${orderId} on Nitrogames`,
         },
         Customers: {
           client_name: formData.clientName,
@@ -116,9 +135,9 @@ const Checkout = () => {
           address: formData.address || undefined,
         },
         OrdersApiData: {
-          okUrl: `${window.location.origin}/order-success?id=${order.id}`,
-          koUrl: `${window.location.origin}/checkout/failed?id=${order.id}`,
-          merchant_order_id: order.id.toString(),
+          okUrl: `${window.location.origin}/order-success?id=${orderId}`,
+          koUrl: `${window.location.origin}/checkout/failed?id=${orderId}`,
+          merchant_order_id: orderId.toString(),
         },
       });
 
@@ -131,7 +150,7 @@ const Checkout = () => {
           .update({
             payment_intent_id: paymentResult.body.order.toString(),
           })
-          .eq('id', order.id);
+          .eq('id', orderId);
       }
 
       // Clear the cart
@@ -142,7 +161,7 @@ const Checkout = () => {
         window.location.href = paymentResult.body.pay_url;
       } else {
         // Redirect to success page if no payment URL is provided
-        navigate('/order-success', { state: { orderId: order.id } });
+        navigate('/order-success', { state: { orderId } });
         toast({
           title: 'Order created',
           description: 'Your order has been created successfully.',
@@ -150,9 +169,26 @@ const Checkout = () => {
       }
     } catch (error: any) {
       console.error('Error during checkout:', error);
+      
+      // Try to encode error object in the URL
+      let errorMessage = error.message || 'There was an error processing your payment';
+      let errorUrl = `/checkout/failed?id=${stateParams?.orderId || ''}`;
+      
+      try {
+        const errorObj = {
+          error: errorMessage,
+          details: "Please try again or contact support"
+        };
+        errorUrl += `&error=${encodeURIComponent(JSON.stringify(errorObj))}`;
+      } catch (e) {
+        errorUrl += `&error=${encodeURIComponent(errorMessage)}`;
+      }
+      
+      navigate(errorUrl);
+      
       toast({
         title: 'Checkout failed',
-        description: error.message || 'There was an error processing your payment. Please try again.',
+        description: 'There was an error processing your payment. You will be redirected.',
         variant: 'destructive',
       });
     } finally {
@@ -309,8 +345,17 @@ const Checkout = () => {
                       className="w-full flex items-center justify-center"
                       disabled={isProcessing || !validateForm()}
                     >
-                      {isProcessing ? 'Processing...' : 'Proceed to Payment'}
-                      {!isProcessing && <ChevronRight className="ml-2 h-4 w-4" />}
+                      {isProcessing ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          Proceed to Payment
+                          <ChevronRight className="ml-2 h-4 w-4" />
+                        </>
+                      )}
                     </Button>
                   </div>
                 </form>

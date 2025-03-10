@@ -17,12 +17,15 @@ async function getAccessToken(apiKey: string, apiSecret: string) {
     return accessToken;
   }
 
-  console.log("Getting new access token with credentials:", { 
-    apiKeyProvided: !!apiKey, 
-    apiSecretProvided: !!apiSecret 
-  });
+  console.log("Getting new access token");
   
   try {
+    if (!apiKey || !apiSecret) {
+      throw new Error("API key or secret is empty or undefined");
+    }
+    
+    console.log(`Using credentials: API Key starts with: ${apiKey.substring(0, 3)}... and API Secret starts with: ${apiSecret.substring(0, 3)}...`);
+    
     const response = await fetch(`${MOTO_API_BASE_URL}/api/login`, {
       method: "POST",
       headers: {
@@ -36,7 +39,13 @@ async function getAccessToken(apiKey: string, apiSecret: string) {
 
     const responseText = await response.text();
     console.log(`Login response status: ${response.status}`);
-    console.log(`Login response body: ${responseText}`);
+    
+    // Log a portion of the response for debugging
+    if (responseText.length > 200) {
+      console.log(`Login response body (truncated): ${responseText.substring(0, 200)}...`);
+    } else {
+      console.log(`Login response body: ${responseText}`);
+    }
 
     if (!response.ok) {
       throw new Error(`Login failed with status ${response.status}: ${responseText}`);
@@ -57,6 +66,7 @@ async function getAccessToken(apiKey: string, apiSecret: string) {
     // Set token expiry to 1 hour (adjust based on actual token lifetime)
     tokenExpiry = Date.now() + 3600000;
     
+    console.log("Successfully obtained access token");
     return accessToken;
   } catch (error) {
     console.error("Error getting access token:", error);
@@ -79,7 +89,13 @@ async function createOrder(token: string, orderData: any) {
 
     const responseText = await response.text();
     console.log(`MOTO API response status: ${response.status}`);
-    console.log(`MOTO API response body: ${responseText}`);
+    
+    // Log a portion of the response for debugging
+    if (responseText.length > 200) {
+      console.log(`MOTO API response body (truncated): ${responseText.substring(0, 200)}...`);
+    } else {
+      console.log(`MOTO API response body: ${responseText}`);
+    }
     
     let data;
     try {
@@ -207,7 +223,11 @@ serve(async (req) => {
   
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    console.log("Handling OPTIONS request");
+    return new Response(null, { 
+      headers: corsHeaders,
+      status: 200
+    });
   }
 
   try {
@@ -215,8 +235,10 @@ serve(async (req) => {
     const MOTO_API_SECRET = Deno.env.get("MOTO_API_SECRET");
     
     if (!MOTO_API_KEY || !MOTO_API_SECRET) {
-      console.error("MOTO API credentials are not set");
-      return new Response(JSON.stringify({ error: "MOTO API credentials are not set" }), {
+      console.error("MOTO API credentials are not set in environment variables");
+      return new Response(JSON.stringify({ 
+        error: "MOTO API credentials are not configured properly on the server" 
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,
       });
@@ -252,7 +274,10 @@ serve(async (req) => {
       console.log("Got access token successfully");
     } catch (error) {
       console.error("Failed to get access token:", error);
-      return new Response(JSON.stringify({ error: `Authentication failed: ${error.message}` }), {
+      return new Response(JSON.stringify({ 
+        error: `Authentication failed with MOTO API: ${error.message}`,
+        details: "Please check the MOTO API credentials in your environment variables."
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 401,
       });
@@ -327,14 +352,20 @@ serve(async (req) => {
       });
     } catch (error) {
       console.error("Operation failed:", error);
-      return new Response(JSON.stringify({ error: error.message }), {
+      return new Response(JSON.stringify({ 
+        error: error.message,
+        details: "Operation failed with the MOTO API"
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,
       });
     }
   } catch (error) {
     console.error("Unhandled error:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ 
+      error: "An unexpected error occurred",
+      details: error.message
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });
