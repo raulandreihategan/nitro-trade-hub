@@ -30,10 +30,16 @@ async function getAccessToken(apiKey: string, apiSecret: string) {
       }),
     });
 
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Login failed with status ${response.status}: ${errorText}`);
+      throw new Error(`Login failed with status ${response.status}: ${errorText}`);
+    }
+
     const data = await response.json();
     console.log("Login response:", data);
 
-    if (!response.ok || !data.access_token) {
+    if (!data.access_token) {
       throw new Error(data.messages || "Failed to get access token");
     }
 
@@ -60,11 +66,18 @@ async function createOrder(token: string, orderData: any) {
       body: JSON.stringify(orderData),
     });
 
-    const data = await response.json();
-    console.log("Create order response:", data);
+    const responseText = await response.text();
+    console.log(`MOTO API response status: ${response.status}, text: ${responseText}`);
+    
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (e) {
+      throw new Error(`Invalid JSON response: ${responseText}`);
+    }
     
     if (!response.ok) {
-      throw new Error(data.messages || "Failed to create order");
+      throw new Error(data.messages || `Failed to create order: ${response.status}`);
     }
 
     return data;
@@ -93,13 +106,14 @@ async function getOrdersList(token: string, queryParams: any = {}) {
       },
     });
 
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to get orders list: ${response.status} - ${errorText}`);
+    }
+
     const data = await response.json();
     console.log("Orders list response:", data);
     
-    if (!response.ok) {
-      throw new Error(data.messages || "Failed to get orders list");
-    }
-
     return data;
   } catch (error) {
     console.error("Error getting orders list:", error);
@@ -117,13 +131,14 @@ async function cancelOrder(token: string, orderId: number) {
       },
     });
 
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to cancel order: ${response.status} - ${errorText}`);
+    }
+
     const data = await response.json();
     console.log("Cancel order response:", data);
     
-    if (!response.ok) {
-      throw new Error(data.messages || "Failed to cancel order");
-    }
-
     return data;
   } catch (error) {
     console.error("Error canceling order:", error);
@@ -145,13 +160,14 @@ async function refundOrder(token: string, orderId: number, amount: string) {
       }),
     });
 
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to refund order: ${response.status} - ${errorText}`);
+    }
+
     const data = await response.json();
     console.log("Refund order response:", data);
     
-    if (!response.ok) {
-      throw new Error(data.messages || "Failed to refund order");
-    }
-
     return data;
   } catch (error) {
     console.error("Error refunding order:", error);
@@ -175,6 +191,8 @@ serve(async (req) => {
       throw new Error("MOTO API credentials are not set");
     }
 
+    console.log("API credentials found, proceeding with request");
+
     // Get the request body
     let body = {};
     try {
@@ -182,54 +200,86 @@ serve(async (req) => {
       console.log("Request body:", body);
     } catch (e) {
       console.error("Error parsing request body:", e);
-      // If there's no body or it's not JSON, continue with empty object
+      return new Response(JSON.stringify({ error: "Invalid JSON body" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+      });
     }
 
     const action = body.action;
     if (!action) {
-      throw new Error("Action is required");
+      return new Response(JSON.stringify({ error: "Action is required" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+      });
     }
 
     // Get access token
-    const token = await getAccessToken(MOTO_API_KEY, MOTO_API_SECRET);
-    console.log("Got access token");
+    let token;
+    try {
+      token = await getAccessToken(MOTO_API_KEY, MOTO_API_SECRET);
+      console.log("Got access token");
+    } catch (error) {
+      console.error("Failed to get access token:", error);
+      return new Response(JSON.stringify({ error: error.message }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
+    }
 
     let result;
 
-    switch (action) {
-      case "create-order":
-        // Remove the action from the body before passing to the API
-        const { action: _, ...orderData } = body;
-        result = await createOrder(token, orderData);
-        break;
-      case "orders-list":
-        // Remove action from filters
-        const { action: __, ...filters } = body;
-        result = await getOrdersList(token, filters);
-        break;
-      case "cancel-order":
-        if (!body.orderId) {
-          throw new Error("Order ID is required");
-        }
-        result = await cancelOrder(token, body.orderId);
-        break;
-      case "refund-order":
-        if (!body.orderId || !body.amount) {
-          throw new Error("Order ID and amount are required");
-        }
-        result = await refundOrder(token, body.orderId, body.amount);
-        break;
-      default:
-        throw new Error("Invalid action");
-    }
+    try {
+      switch (action) {
+        case "create-order":
+          // Remove the action from the body before passing to the API
+          const { action: _, ...orderData } = body;
+          result = await createOrder(token, orderData);
+          break;
+        case "orders-list":
+          // Remove action from filters
+          const { action: __, ...filters } = body;
+          result = await getOrdersList(token, filters);
+          break;
+        case "cancel-order":
+          if (!body.orderId) {
+            return new Response(JSON.stringify({ error: "Order ID is required" }), {
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+              status: 400,
+            });
+          }
+          result = await cancelOrder(token, body.orderId);
+          break;
+        case "refund-order":
+          if (!body.orderId || !body.amount) {
+            return new Response(JSON.stringify({ error: "Order ID and amount are required" }), {
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+              status: 400,
+            });
+          }
+          result = await refundOrder(token, body.orderId, body.amount);
+          break;
+        default:
+          return new Response(JSON.stringify({ error: "Invalid action" }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 400,
+          });
+      }
 
-    console.log("Operation successful, returning result");
-    return new Response(JSON.stringify(result), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
+      console.log("Operation successful, returning result:", result);
+      return new Response(JSON.stringify(result), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    } catch (error) {
+      console.error("Operation failed:", error);
+      return new Response(JSON.stringify({ error: error.message }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+      });
+    }
   } catch (error) {
-    console.error("Error:", error);
+    console.error("Unhandled error:", error);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,

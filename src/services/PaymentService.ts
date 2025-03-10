@@ -39,10 +39,13 @@ export class PaymentService {
     try {
       console.log('Creating payment order with data:', orderData);
       
+      // Clean up undefined values to prevent issues with the API
+      const cleanedOrderData = JSON.parse(JSON.stringify(orderData));
+      
       const { data, error } = await supabase.functions.invoke('moto-payment', {
         body: {
           action: 'create-order',
-          ...orderData,
+          ...cleanedOrderData,
         },
       });
 

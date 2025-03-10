@@ -4,8 +4,9 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
-import { XCircle } from 'lucide-react';
+import { XCircle, AlertCircle } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const CheckoutFailed = () => {
   const [searchParams] = useSearchParams();
@@ -13,12 +14,19 @@ const CheckoutFailed = () => {
   const [orderInfo, setOrderInfo] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
   
   const orderId = searchParams.get('id');
+  const errorMessage = searchParams.get('error');
 
   useEffect(() => {
     const getOrderDetails = async () => {
       if (!orderId) {
+        toast({
+          title: "Error",
+          description: "Order ID not found in URL",
+          variant: "destructive",
+        });
         navigate('/');
         return;
       }
@@ -31,14 +39,22 @@ const CheckoutFailed = () => {
           .eq('id', orderId)
           .maybeSingle();
 
-        if (error) throw error;
+        if (error) {
+          console.error('Database error:', error);
+          throw error;
+        }
         
         if (!data) {
-          setError("Order not found");
+          setError("Order not found in our records");
           return;
         }
         
         setOrderInfo(data);
+        
+        // If there's an error message in the URL, display it
+        if (errorMessage) {
+          setError(decodeURIComponent(errorMessage));
+        }
       } catch (error: any) {
         console.error('Error fetching order details:', error);
         setError(error.message || "Failed to load order details");
@@ -48,7 +64,7 @@ const CheckoutFailed = () => {
     };
 
     getOrderDetails();
-  }, [orderId, navigate]);
+  }, [orderId, navigate, errorMessage, toast]);
 
   if (isLoading) {
     return (
@@ -76,9 +92,15 @@ const CheckoutFailed = () => {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Payment Failed</h1>
             
             {error ? (
-              <p className="text-gray-600 mb-4">
-                {error}
-              </p>
+              <div className="mb-4">
+                <p className="text-gray-600">
+                  We were unable to process your payment due to the following error:
+                </p>
+                <div className="mt-2 p-3 bg-red-50 rounded-lg border border-red-100 text-red-700 flex items-start">
+                  <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm">{error}</p>
+                </div>
+              </div>
             ) : (
               <p className="text-gray-600 mb-4">
                 We were unable to process your payment. Your order has been saved, and you can try again.
