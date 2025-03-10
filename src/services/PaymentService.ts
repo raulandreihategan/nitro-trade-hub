@@ -37,6 +37,8 @@ export class PaymentService {
     };
   }) {
     try {
+      console.log('Creating payment order with data:', orderData);
+      
       const { data, error } = await supabase.functions.invoke('moto-payment', {
         body: {
           action: 'create-order',
@@ -45,7 +47,12 @@ export class PaymentService {
         method: 'POST',
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw error;
+      }
+      
+      console.log('Payment order created:', data);
       return data;
     } catch (error) {
       console.error('Error creating payment order:', error);

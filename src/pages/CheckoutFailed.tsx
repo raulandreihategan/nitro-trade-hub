@@ -12,6 +12,7 @@ const CheckoutFailed = () => {
   const navigate = useNavigate();
   const [orderInfo, setOrderInfo] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
   const orderId = searchParams.get('id');
 
@@ -28,14 +29,19 @@ const CheckoutFailed = () => {
           .from('orders')
           .select('*, order_items(*)')
           .eq('id', orderId)
-          .single();
+          .maybeSingle();
 
         if (error) throw error;
         
+        if (!data) {
+          setError("Order not found");
+          return;
+        }
+        
         setOrderInfo(data);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error fetching order details:', error);
-        navigate('/');
+        setError(error.message || "Failed to load order details");
       } finally {
         setIsLoading(false);
       }
@@ -69,9 +75,15 @@ const CheckoutFailed = () => {
             
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Payment Failed</h1>
             
-            <p className="text-gray-600 mb-4">
-              We were unable to process your payment. Your order has been saved, and you can try again.
-            </p>
+            {error ? (
+              <p className="text-gray-600 mb-4">
+                {error}
+              </p>
+            ) : (
+              <p className="text-gray-600 mb-4">
+                We were unable to process your payment. Your order has been saved, and you can try again.
+              </p>
+            )}
             
             {orderInfo && (
               <div className="bg-gray-50 rounded-lg p-4 mb-6">

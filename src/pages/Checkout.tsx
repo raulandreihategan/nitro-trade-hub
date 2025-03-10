@@ -97,10 +97,10 @@ const Checkout = () => {
       
       if (itemsError) throw itemsError;
 
-      // Now create payment with MOTO API
+      // Create payment URL with MOTO API
       const paymentResult = await PaymentService.createOrder({
         Orders: {
-          terminal_id: 1, // Replace with your actual terminal ID
+          terminal_id: 1, // Default terminal ID
           amount: totalPrice.toString(),
           lang: 2, // English
           merchant_order_description: `Order ${order.id} on Nitrogames`,
@@ -108,12 +108,12 @@ const Checkout = () => {
         Customers: {
           client_name: formData.clientName,
           mail: formData.email,
-          mobile: formData.phone,
-          country: formData.country,
-          city: formData.city,
-          state: formData.state,
-          zip: formData.zip,
-          address: formData.address,
+          mobile: formData.phone || undefined,
+          country: formData.country || undefined,
+          city: formData.city || undefined,
+          state: formData.state || undefined,
+          zip: formData.zip || undefined,
+          address: formData.address || undefined,
         },
         OrdersApiData: {
           okUrl: `${window.location.origin}/order-success?id=${order.id}`,
@@ -122,8 +122,10 @@ const Checkout = () => {
         },
       });
 
+      console.log('Payment result:', paymentResult);
+
       // Update our order with the payment intent
-      if (paymentResult.body && paymentResult.body.order) {
+      if (paymentResult && paymentResult.body && paymentResult.body.order) {
         await supabase
           .from('orders')
           .update({
@@ -136,11 +138,15 @@ const Checkout = () => {
       await clearCart();
       
       // Redirect to payment URL if provided
-      if (paymentResult.body && paymentResult.body.pay_url) {
+      if (paymentResult && paymentResult.body && paymentResult.body.pay_url) {
         window.location.href = paymentResult.body.pay_url;
       } else {
         // Redirect to success page if no payment URL is provided
         navigate('/order-success', { state: { orderId: order.id } });
+        toast({
+          title: 'Order created',
+          description: 'Your order has been created successfully.',
+        });
       }
     } catch (error: any) {
       console.error('Error during checkout:', error);

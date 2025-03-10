@@ -13,9 +13,11 @@ const corsHeaders = {
 async function getAccessToken(apiKey: string, apiSecret: string) {
   // Return cached token if it's still valid
   if (accessToken && tokenExpiry && tokenExpiry > Date.now()) {
+    console.log("Using cached token");
     return accessToken;
   }
 
+  console.log("Getting new access token");
   try {
     const response = await fetch(`${MOTO_API_BASE_URL}/api/login`, {
       method: "POST",
@@ -29,6 +31,7 @@ async function getAccessToken(apiKey: string, apiSecret: string) {
     });
 
     const data = await response.json();
+    console.log("Login response:", data);
 
     if (!response.ok || !data.access_token) {
       throw new Error(data.messages || "Failed to get access token");
@@ -46,6 +49,7 @@ async function getAccessToken(apiKey: string, apiSecret: string) {
 }
 
 async function createOrder(token: string, orderData: any) {
+  console.log("Creating order with data:", orderData);
   try {
     const response = await fetch(`${MOTO_API_BASE_URL}/api/orders/create`, {
       method: "POST",
@@ -57,6 +61,7 @@ async function createOrder(token: string, orderData: any) {
     });
 
     const data = await response.json();
+    console.log("Create order response:", data);
     
     if (!response.ok) {
       throw new Error(data.messages || "Failed to create order");
@@ -80,6 +85,7 @@ async function getOrdersList(token: string, queryParams: any = {}) {
       }
     });
 
+    console.log("Getting orders list from URL:", url.toString());
     const response = await fetch(url.toString(), {
       method: "GET",
       headers: {
@@ -88,6 +94,7 @@ async function getOrdersList(token: string, queryParams: any = {}) {
     });
 
     const data = await response.json();
+    console.log("Orders list response:", data);
     
     if (!response.ok) {
       throw new Error(data.messages || "Failed to get orders list");
@@ -102,6 +109,7 @@ async function getOrdersList(token: string, queryParams: any = {}) {
 
 async function cancelOrder(token: string, orderId: number) {
   try {
+    console.log("Canceling order ID:", orderId);
     const response = await fetch(`${MOTO_API_BASE_URL}/api/orders/cancel/${orderId}`, {
       method: "GET",
       headers: {
@@ -110,6 +118,7 @@ async function cancelOrder(token: string, orderId: number) {
     });
 
     const data = await response.json();
+    console.log("Cancel order response:", data);
     
     if (!response.ok) {
       throw new Error(data.messages || "Failed to cancel order");
@@ -124,6 +133,7 @@ async function cancelOrder(token: string, orderId: number) {
 
 async function refundOrder(token: string, orderId: number, amount: string) {
   try {
+    console.log("Refunding order ID:", orderId, "amount:", amount);
     const response = await fetch(`${MOTO_API_BASE_URL}/api/orders/refund/${orderId}`, {
       method: "POST",
       headers: {
@@ -136,6 +146,7 @@ async function refundOrder(token: string, orderId: number, amount: string) {
     });
 
     const data = await response.json();
+    console.log("Refund order response:", data);
     
     if (!response.ok) {
       throw new Error(data.messages || "Failed to refund order");
@@ -149,6 +160,8 @@ async function refundOrder(token: string, orderId: number, amount: string) {
 }
 
 serve(async (req) => {
+  console.log("Received request:", req.method, req.url);
+  
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -166,7 +179,9 @@ serve(async (req) => {
     let body = {};
     try {
       body = await req.json();
+      console.log("Request body:", body);
     } catch (e) {
+      console.error("Error parsing request body:", e);
       // If there's no body or it's not JSON, continue with empty object
     }
 
@@ -177,6 +192,7 @@ serve(async (req) => {
 
     // Get access token
     const token = await getAccessToken(MOTO_API_KEY, MOTO_API_SECRET);
+    console.log("Got access token");
 
     let result;
 
@@ -207,6 +223,7 @@ serve(async (req) => {
         throw new Error("Invalid action");
     }
 
+    console.log("Operation successful, returning result");
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
