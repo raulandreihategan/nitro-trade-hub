@@ -39,13 +39,36 @@ export class PaymentService {
     try {
       console.log('Creating payment order with data:', orderData);
       
-      // Clean up undefined values to prevent issues with the API
-      const cleanedOrderData = JSON.parse(JSON.stringify(orderData));
+      // Deep clean the orderData to remove undefined values and objects with "_type": "undefined"
+      const cleanedOrderData = JSON.parse(JSON.stringify(orderData, (key, value) => {
+        // Check if this is a special undefined object created by some frameworks
+        if (value && typeof value === 'object' && value._type === 'undefined') {
+          return undefined;
+        }
+        return value;
+      }));
+      
+      // Remove any undefined/null properties that may cause issues with the API
+      const cleanNestedObject = (obj: any) => {
+        Object.keys(obj).forEach(key => {
+          if (obj[key] === undefined || obj[key] === null) {
+            delete obj[key];
+          } else if (typeof obj[key] === 'object') {
+            cleanNestedObject(obj[key]);
+          }
+        });
+        return obj;
+      };
+      
+      // Apply the cleaning recursively
+      const finalOrderData = cleanNestedObject(cleanedOrderData);
+      
+      console.log('Cleaned payment order data:', finalOrderData);
       
       const { data, error } = await supabase.functions.invoke('moto-payment', {
         body: {
           action: 'create-order',
-          ...cleanedOrderData,
+          ...finalOrderData,
         },
       });
 

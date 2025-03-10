@@ -17,7 +17,11 @@ async function getAccessToken(apiKey: string, apiSecret: string) {
     return accessToken;
   }
 
-  console.log("Getting new access token");
+  console.log("Getting new access token with credentials:", { 
+    apiKeyProvided: !!apiKey, 
+    apiSecretProvided: !!apiSecret 
+  });
+  
   try {
     const response = await fetch(`${MOTO_API_BASE_URL}/api/login`, {
       method: "POST",
@@ -30,14 +34,20 @@ async function getAccessToken(apiKey: string, apiSecret: string) {
       }),
     });
 
+    const responseText = await response.text();
+    console.log(`Login response status: ${response.status}`);
+    console.log(`Login response body: ${responseText}`);
+
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`Login failed with status ${response.status}: ${errorText}`);
-      throw new Error(`Login failed with status ${response.status}: ${errorText}`);
+      throw new Error(`Login failed with status ${response.status}: ${responseText}`);
     }
 
-    const data = await response.json();
-    console.log("Login response:", data);
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (e) {
+      throw new Error(`Invalid JSON response from login: ${responseText}`);
+    }
 
     if (!data.access_token) {
       throw new Error(data.messages || "Failed to get access token");
@@ -55,7 +65,8 @@ async function getAccessToken(apiKey: string, apiSecret: string) {
 }
 
 async function createOrder(token: string, orderData: any) {
-  console.log("Creating order with data:", orderData);
+  console.log("Creating order with data:", JSON.stringify(orderData, null, 2));
+  
   try {
     const response = await fetch(`${MOTO_API_BASE_URL}/api/orders/create`, {
       method: "POST",
@@ -67,17 +78,18 @@ async function createOrder(token: string, orderData: any) {
     });
 
     const responseText = await response.text();
-    console.log(`MOTO API response status: ${response.status}, text: ${responseText}`);
+    console.log(`MOTO API response status: ${response.status}`);
+    console.log(`MOTO API response body: ${responseText}`);
     
     let data;
     try {
       data = JSON.parse(responseText);
     } catch (e) {
-      throw new Error(`Invalid JSON response: ${responseText}`);
+      throw new Error(`Invalid JSON response from orders/create: ${responseText}`);
     }
     
     if (!response.ok) {
-      throw new Error(data.messages || `Failed to create order: ${response.status}`);
+      throw new Error(data.messages || data.error || `Failed to create order: ${response.status}`);
     }
 
     return data;
@@ -106,13 +118,18 @@ async function getOrdersList(token: string, queryParams: any = {}) {
       },
     });
 
+    const responseText = await response.text();
+    
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to get orders list: ${response.status} - ${errorText}`);
+      throw new Error(`Failed to get orders list: ${response.status} - ${responseText}`);
     }
 
-    const data = await response.json();
-    console.log("Orders list response:", data);
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (e) {
+      throw new Error(`Invalid JSON response from orders/list: ${responseText}`);
+    }
     
     return data;
   } catch (error) {
@@ -131,13 +148,18 @@ async function cancelOrder(token: string, orderId: number) {
       },
     });
 
+    const responseText = await response.text();
+    
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to cancel order: ${response.status} - ${errorText}`);
+      throw new Error(`Failed to cancel order: ${response.status} - ${responseText}`);
     }
 
-    const data = await response.json();
-    console.log("Cancel order response:", data);
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (e) {
+      throw new Error(`Invalid JSON response from orders/cancel: ${responseText}`);
+    }
     
     return data;
   } catch (error) {
@@ -160,13 +182,18 @@ async function refundOrder(token: string, orderId: number, amount: string) {
       }),
     });
 
+    const responseText = await response.text();
+    
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to refund order: ${response.status} - ${errorText}`);
+      throw new Error(`Failed to refund order: ${response.status} - ${responseText}`);
     }
 
-    const data = await response.json();
-    console.log("Refund order response:", data);
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (e) {
+      throw new Error(`Invalid JSON response from orders/refund: ${responseText}`);
+    }
     
     return data;
   } catch (error) {
@@ -188,7 +215,11 @@ serve(async (req) => {
     const MOTO_API_SECRET = Deno.env.get("MOTO_API_SECRET");
     
     if (!MOTO_API_KEY || !MOTO_API_SECRET) {
-      throw new Error("MOTO API credentials are not set");
+      console.error("MOTO API credentials are not set");
+      return new Response(JSON.stringify({ error: "MOTO API credentials are not set" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+      });
     }
 
     console.log("API credentials found, proceeding with request");
@@ -197,7 +228,7 @@ serve(async (req) => {
     let body = {};
     try {
       body = await req.json();
-      console.log("Request body:", body);
+      console.log("Request body:", JSON.stringify(body, null, 2));
     } catch (e) {
       console.error("Error parsing request body:", e);
       return new Response(JSON.stringify({ error: "Invalid JSON body" }), {
@@ -218,10 +249,10 @@ serve(async (req) => {
     let token;
     try {
       token = await getAccessToken(MOTO_API_KEY, MOTO_API_SECRET);
-      console.log("Got access token");
+      console.log("Got access token successfully");
     } catch (error) {
       console.error("Failed to get access token:", error);
-      return new Response(JSON.stringify({ error: error.message }), {
+      return new Response(JSON.stringify({ error: `Authentication failed: ${error.message}` }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 401,
       });
@@ -234,6 +265,29 @@ serve(async (req) => {
         case "create-order":
           // Remove the action from the body before passing to the API
           const { action: _, ...orderData } = body;
+          
+          // Validate required order data
+          if (!orderData.Orders || !orderData.Orders.amount) {
+            return new Response(JSON.stringify({ error: "Orders.amount is required" }), {
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+              status: 400,
+            });
+          }
+          
+          if (!orderData.Customers || !orderData.Customers.client_name || !orderData.Customers.mail) {
+            return new Response(JSON.stringify({ error: "Customers.client_name and Customers.mail are required" }), {
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+              status: 400,
+            });
+          }
+          
+          if (!orderData.OrdersApiData || !orderData.OrdersApiData.okUrl || !orderData.OrdersApiData.koUrl) {
+            return new Response(JSON.stringify({ error: "OrdersApiData.okUrl and OrdersApiData.koUrl are required" }), {
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+              status: 400,
+            });
+          }
+          
           result = await createOrder(token, orderData);
           break;
         case "orders-list":
@@ -266,7 +320,7 @@ serve(async (req) => {
           });
       }
 
-      console.log("Operation successful, returning result:", result);
+      console.log("Operation successful, returning result:", JSON.stringify(result, null, 2));
       return new Response(JSON.stringify(result), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,

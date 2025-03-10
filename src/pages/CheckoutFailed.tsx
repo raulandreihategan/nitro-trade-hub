@@ -4,7 +4,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
-import { XCircle, AlertCircle } from 'lucide-react';
+import { XCircle, AlertCircle, ArrowLeft } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -71,7 +71,7 @@ const CheckoutFailed = () => {
       <div className="min-h-screen flex flex-col">
         <Header />
         <main className="flex-grow pt-24 flex items-center justify-center">
-          <p className="text-gray-500">Loading...</p>
+          <p className="text-gray-500">Loading order details...</p>
         </main>
         <Footer />
       </div>
@@ -98,7 +98,7 @@ const CheckoutFailed = () => {
                 </p>
                 <div className="mt-2 p-3 bg-red-50 rounded-lg border border-red-100 text-red-700 flex items-start">
                   <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm">{error}</p>
+                  <p className="text-sm text-left">{error}</p>
                 </div>
               </div>
             ) : (
@@ -110,7 +110,10 @@ const CheckoutFailed = () => {
             {orderInfo && (
               <div className="bg-gray-50 rounded-lg p-4 mb-6">
                 <p className="text-sm text-gray-600">Order ID: <span className="font-medium">{orderInfo.id}</span></p>
-                <p className="text-sm text-gray-600">Amount: <span className="font-medium">${orderInfo.total_amount.toFixed(2)}</span></p>
+                {orderInfo.total_amount && (
+                  <p className="text-sm text-gray-600">Amount: <span className="font-medium">${orderInfo.total_amount.toFixed(2)}</span></p>
+                )}
+                <p className="text-sm text-gray-600">Date: <span className="font-medium">{new Date(orderInfo.created_at).toLocaleString()}</span></p>
               </div>
             )}
             
@@ -120,7 +123,10 @@ const CheckoutFailed = () => {
             
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Link to="/">
-                <Button variant="outline">Return to Home</Button>
+                <Button variant="outline" className="flex items-center">
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Return to Home
+                </Button>
               </Link>
               <Link to="/checkout">
                 <Button>Try Again</Button>
