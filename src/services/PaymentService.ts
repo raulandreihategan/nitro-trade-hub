@@ -39,56 +39,54 @@ export class PaymentService {
     try {
       console.log('Creating payment order with data:', orderData);
       
-      // Deep clean the orderData to remove undefined values, null values, and objects with "_type": "undefined"
-      const cleanedOrderData = JSON.parse(JSON.stringify(orderData, (key, value) => {
-        // Check if this is a special undefined object created by some frameworks
-        if (value && typeof value === 'object' && value._type === 'undefined') {
-          return undefined;
+      // Deep clean the orderData to remove undefined values, null values, and empty strings
+      const cleanOrderData = (obj: any): any => {
+        if (obj === null || obj === undefined) return undefined;
+        if (typeof obj !== 'object') return obj;
+        
+        if (Array.isArray(obj)) {
+          return obj.map(cleanOrderData).filter(item => item !== undefined);
         }
-        return value;
-      }));
-      
-      // Remove any undefined/null properties that may cause issues with the API
-      const cleanNestedObject = (obj: any) => {
-        Object.keys(obj).forEach(key => {
-          if (obj[key] === undefined || obj[key] === null) {
-            delete obj[key];
-          } else if (typeof obj[key] === 'object' && obj[key] !== null) {
-            cleanNestedObject(obj[key]);
-            // Remove empty objects
-            if (Object.keys(obj[key]).length === 0) {
-              delete obj[key];
-            }
+        
+        const result: any = {};
+        let isEmpty = true;
+        
+        for (const key in obj) {
+          const value = cleanOrderData(obj[key]);
+          if (value !== undefined && value !== '' && value !== null) {
+            result[key] = value;
+            isEmpty = false;
           }
-        });
-        return obj;
+        }
+        
+        return isEmpty ? undefined : result;
       };
       
-      // Apply the cleaning recursively
-      const finalOrderData = cleanNestedObject(cleanedOrderData);
-      
-      console.log('Cleaned payment order data:', finalOrderData);
+      const cleanedData = cleanOrderData(orderData);
+      console.log('Cleaned payment order data:', cleanedData);
       
       const { data, error } = await supabase.functions.invoke('moto-payment', {
         body: {
           action: 'create-order',
-          ...finalOrderData,
+          ...cleanedData,
         },
       });
 
       if (error) {
         console.error('Supabase function error:', error);
+        
         // Enhance the koUrl with error information if possible
-        if (finalOrderData.OrdersApiData && finalOrderData.OrdersApiData.koUrl) {
-          let errorMessage = error.message || "Payment processing failed";
+        if (cleanedData.OrdersApiData && cleanedData.OrdersApiData.koUrl) {
+          const errorMessage = error.message || "Payment processing failed";
+          const errorDetails = error.details || "Please check with support or try again";
           
           // Create a URL object to manipulate the URL
-          const koUrl = new URL(finalOrderData.OrdersApiData.koUrl);
+          const koUrl = new URL(cleanedData.OrdersApiData.koUrl);
           
           // Add error as a URL parameter, properly encoded
           const errorObj = {
             error: errorMessage,
-            details: "Please check with support or try again"
+            details: errorDetails
           };
           koUrl.searchParams.set('error', encodeURIComponent(JSON.stringify(errorObj)));
           
@@ -96,12 +94,21 @@ export class PaymentService {
           window.location.href = koUrl.toString();
           return null;
         }
+        
         throw error;
       }
       
-      console.log('Payment order created:', data);
-      return data;
-    } catch (error) {
+      console.log('Payment order created successfully:', data);
+      
+      // Check if we have a payment URL to redirect to
+      if (data && data.body && data.body.pay_url) {
+        console.log('Redirecting to payment page:', data.body.pay_url);
+        return data;
+      } else {
+        console.error('No payment URL returned from API:', data);
+        throw new Error('No payment URL returned from the payment gateway');
+      }
+    } catch (error: any) {
       console.error('Error creating payment order:', error);
       throw error;
     }
@@ -128,6 +135,25 @@ export class PaymentService {
       return data;
     } catch (error) {
       console.error('Error getting orders list:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Gets a list of available payment terminals
+   */
+  static async getTerminals() {
+    try {
+      const { data, error } = await supabase.functions.invoke('moto-payment', {
+        body: {
+          action: 'get-terminals'
+        },
+      });
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error getting terminals:', error);
       throw error;
     }
   }

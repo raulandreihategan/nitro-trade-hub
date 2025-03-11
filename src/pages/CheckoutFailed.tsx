@@ -4,7 +4,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
-import { XCircle, AlertCircle, ArrowLeft, RefreshCcw } from 'lucide-react';
+import { XCircle, AlertCircle, ArrowLeft, RefreshCcw, ExternalLink } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -84,12 +84,20 @@ const CheckoutFailed = () => {
     });
   };
 
+  const formatDate = (dateString: string) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleString();
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col">
         <Header />
         <main className="flex-grow pt-24 flex items-center justify-center">
-          <p className="text-gray-500">Loading order details...</p>
+          <div className="flex flex-col items-center">
+            <div className="animate-spin h-8 w-8 border-4 border-nitro-600 border-t-transparent rounded-full mb-4"></div>
+            <p className="text-gray-600">Loading order details...</p>
+          </div>
         </main>
         <Footer />
       </div>
@@ -136,9 +144,21 @@ const CheckoutFailed = () => {
                 {orderInfo.total_amount && (
                   <p className="text-sm text-gray-600">Amount: <span className="font-medium">${orderInfo.total_amount.toFixed(2)}</span></p>
                 )}
-                <p className="text-sm text-gray-600">Date: <span className="font-medium">{new Date(orderInfo.created_at).toLocaleString()}</span></p>
+                <p className="text-sm text-gray-600">Date: <span className="font-medium">{formatDate(orderInfo.created_at)}</span></p>
               </div>
             )}
+            
+            <div className="text-left mb-6 p-4 border border-yellow-200 bg-yellow-50 rounded-lg">
+              <h3 className="font-semibold text-yellow-800 mb-2 flex items-center">
+                <AlertCircle className="h-4 w-4 mr-1" /> Troubleshooting
+              </h3>
+              <ul className="text-sm text-yellow-700 list-disc list-inside space-y-1">
+                <li>Ensure you've entered valid payment information</li>
+                <li>Check if your card has sufficient funds</li>
+                <li>Some cards may require additional verification steps</li>
+                <li>If you continue to experience issues, try using a different payment method</li>
+              </ul>
+            </div>
             
             <p className="text-gray-600 mb-8">
               If you continue to experience issues, please contact our support team for assistance.
@@ -155,6 +175,12 @@ const CheckoutFailed = () => {
                 <RefreshCcw className="mr-2 h-4 w-4" />
                 Try Again
               </Button>
+            </div>
+            
+            <div className="mt-8 pt-4 border-t border-gray-200">
+              <p className="text-xs text-gray-500">
+                Need help? Contact us at <a href="mailto:support@nitrogames.com" className="text-nitro-600 hover:underline">support@nitrogames.com</a>
+              </p>
             </div>
           </div>
         </div>

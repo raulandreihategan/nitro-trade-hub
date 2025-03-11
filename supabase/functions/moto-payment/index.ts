@@ -1,220 +1,176 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const MOTO_API_BASE_URL = "https://dashboard.realisto.net";
-let accessToken = null;
-let tokenExpiry = null;
-
+// Define CORS headers
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-async function getAccessToken(apiKey: string, apiSecret: string) {
-  // Return cached token if it's still valid
-  if (accessToken && tokenExpiry && tokenExpiry > Date.now()) {
-    console.log("Using cached token");
-    return accessToken;
+// Realisto API service class
+class RealistoService {
+  private baseUrl = "https://dashboard.realisto.net/api";
+  private apiKey: string;
+  private apiSecret: string;
+  private authToken: string | null = null;
+  private tokenExpiry: number | null = null;
+
+  constructor(apiKey: string, apiSecret: string) {
+    this.apiKey = apiKey;
+    this.apiSecret = apiSecret;
   }
 
-  console.log("Getting new access token");
-  
-  try {
-    if (!apiKey || !apiSecret) {
-      throw new Error("API key or secret is empty or undefined");
-    }
+  async login(): Promise<string> {
+    console.log("Attempting to authenticate with Realisto API");
     
-    console.log(`Using credentials: API Key starts with: ${apiKey.substring(0, 3)}... and API Secret starts with: ${apiSecret.substring(0, 3)}...`);
-    
-    const response = await fetch(`${MOTO_API_BASE_URL}/api/login`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        api_key: apiKey,
-        api_secret: apiSecret,
-      }),
-    });
-
-    const responseText = await response.text();
-    console.log(`Login response status: ${response.status}`);
-    
-    // Log a portion of the response for debugging
-    if (responseText.length > 200) {
-      console.log(`Login response body (truncated): ${responseText.substring(0, 200)}...`);
-    } else {
-      console.log(`Login response body: ${responseText}`);
+    // Check if we have a valid token
+    if (this.authToken && this.tokenExpiry && this.tokenExpiry > Date.now()) {
+      console.log("Using cached auth token");
+      return this.authToken;
     }
 
-    if (!response.ok) {
-      throw new Error(`Login failed with status ${response.status}: ${responseText}`);
-    }
-
-    let data;
     try {
-      data = JSON.parse(responseText);
-    } catch (e) {
-      throw new Error(`Invalid JSON response from login: ${responseText}`);
-    }
-
-    if (!data.access_token) {
-      throw new Error(data.messages || "Failed to get access token");
-    }
-
-    accessToken = data.access_token;
-    // Set token expiry to 1 hour (adjust based on actual token lifetime)
-    tokenExpiry = Date.now() + 3600000;
-    
-    console.log("Successfully obtained access token");
-    return accessToken;
-  } catch (error) {
-    console.error("Error getting access token:", error);
-    throw error;
-  }
-}
-
-async function createOrder(token: string, orderData: any) {
-  console.log("Creating order with data:", JSON.stringify(orderData, null, 2));
-  
-  try {
-    const response = await fetch(`${MOTO_API_BASE_URL}/api/orders/create`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`,
-      },
-      body: JSON.stringify(orderData),
-    });
-
-    const responseText = await response.text();
-    console.log(`MOTO API response status: ${response.status}`);
-    
-    // Log a portion of the response for debugging
-    if (responseText.length > 200) {
-      console.log(`MOTO API response body (truncated): ${responseText.substring(0, 200)}...`);
-    } else {
-      console.log(`MOTO API response body: ${responseText}`);
-    }
-    
-    let data;
-    try {
-      data = JSON.parse(responseText);
-    } catch (e) {
-      throw new Error(`Invalid JSON response from orders/create: ${responseText}`);
-    }
-    
-    if (!response.ok) {
-      throw new Error(data.messages || data.error || `Failed to create order: ${response.status}`);
-    }
-
-    return data;
-  } catch (error) {
-    console.error("Error creating order:", error);
-    throw error;
-  }
-}
-
-async function getOrdersList(token: string, queryParams: any = {}) {
-  try {
-    const url = new URL(`${MOTO_API_BASE_URL}/api/orders/list`);
-    
-    // Add query parameters if provided
-    Object.keys(queryParams).forEach(key => {
-      if (queryParams[key]) {
-        url.searchParams.append(key, queryParams[key]);
+      if (!this.apiKey || !this.apiSecret) {
+        throw new Error("API key or secret is empty or undefined");
       }
-    });
+      
+      console.log(`Using credentials: API Key starts with: ${this.apiKey.substring(0, 3)}... and API Secret starts with: ${this.apiSecret.substring(0, 3)}...`);
+      
+      const response = await fetch(`${this.baseUrl}/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          api_key: this.apiKey,
+          api_secret: this.apiSecret,
+        }),
+      });
 
-    console.log("Getting orders list from URL:", url.toString());
-    const response = await fetch(url.toString(), {
-      method: "GET",
-      headers: {
-        "Authorization": `Bearer ${token}`,
-      },
-    });
+      const responseText = await response.text();
+      console.log(`Login response status: ${response.status}`);
+      
+      // Log a portion of the response for debugging
+      if (responseText.length > 200) {
+        console.log(`Login response body (truncated): ${responseText.substring(0, 200)}...`);
+      } else {
+        console.log(`Login response body: ${responseText}`);
+      }
 
-    const responseText = await response.text();
-    
-    if (!response.ok) {
-      throw new Error(`Failed to get orders list: ${response.status} - ${responseText}`);
+      if (!response.ok) {
+        throw new Error(`Login failed with status ${response.status}: ${responseText}`);
+      }
+
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        throw new Error(`Invalid JSON response from login: ${responseText}`);
+      }
+
+      if (!data.access_token) {
+        throw new Error(data.messages || "Failed to get access token");
+      }
+
+      this.authToken = data.access_token;
+      // Set token expiry to 9.5 minutes (570 seconds) to be safe
+      this.tokenExpiry = Date.now() + (9.5 * 60 * 1000);
+      
+      console.log("Successfully obtained access token");
+      return this.authToken;
+    } catch (error) {
+      console.error("Authentication error:", error);
+      throw error;
     }
-
-    let data;
-    try {
-      data = JSON.parse(responseText);
-    } catch (e) {
-      throw new Error(`Invalid JSON response from orders/list: ${responseText}`);
-    }
-    
-    return data;
-  } catch (error) {
-    console.error("Error getting orders list:", error);
-    throw error;
   }
-}
 
-async function cancelOrder(token: string, orderId: number) {
-  try {
-    console.log("Canceling order ID:", orderId);
-    const response = await fetch(`${MOTO_API_BASE_URL}/api/orders/cancel/${orderId}`, {
-      method: "GET",
-      headers: {
-        "Authorization": `Bearer ${token}`,
-      },
-    });
-
-    const responseText = await response.text();
+  async executeRequest(url: string, data: any = {}, method: string = "POST"): Promise<any> {
+    // Make sure we have a valid token
+    const token = await this.login();
+    const fullUrl = `${this.baseUrl}${url}`;
     
-    if (!response.ok) {
-      throw new Error(`Failed to cancel order: ${response.status} - ${responseText}`);
+    console.log(`Executing ${method} request to ${fullUrl}`);
+    
+    const headers: HeadersInit = {
+      "Authorization": `Bearer ${token}`,
+      "Content-Type": "application/json",
+    };
+
+    const options: RequestInit = {
+      method,
+      headers,
+    };
+
+    if (method.toUpperCase() === "GET") {
+      // For GET requests, add params to URL
+      const params = new URLSearchParams();
+      for (const key in data) {
+        if (data[key] !== undefined && data[key] !== null) {
+          params.append(key, data[key]);
+        }
+      }
+      
+      const queryString = params.toString();
+      if (queryString) {
+        const separator = url.includes("?") ? "&" : "?";
+        url = `${url}${separator}${queryString}`;
+      }
+    } else if (["POST", "PUT", "PATCH"].includes(method.toUpperCase())) {
+      // For other methods, add data to body
+      options.body = JSON.stringify(data);
     }
 
-    let data;
     try {
-      data = JSON.parse(responseText);
-    } catch (e) {
-      throw new Error(`Invalid JSON response from orders/cancel: ${responseText}`);
+      console.log(`Request options: ${JSON.stringify(options, null, 2)}`);
+      
+      const response = await fetch(fullUrl, options);
+      const responseText = await response.text();
+      
+      console.log(`API response status: ${response.status}`);
+      if (responseText.length > 200) {
+        console.log(`API response body (truncated): ${responseText.substring(0, 200)}...`);
+      } else {
+        console.log(`API response body: ${responseText}`);
+      }
+
+      if (!response.ok) {
+        throw new Error(`Request failed with status ${response.status}: ${responseText}`);
+      }
+
+      let responseData;
+      try {
+        responseData = JSON.parse(responseText);
+      } catch (e) {
+        throw new Error(`Invalid JSON response: ${responseText}`);
+      }
+
+      return responseData;
+    } catch (error) {
+      console.error(`Error executing ${method} request to ${url}:`, error);
+      throw error;
     }
-    
-    return data;
-  } catch (error) {
-    console.error("Error canceling order:", error);
-    throw error;
   }
-}
 
-async function refundOrder(token: string, orderId: number, amount: string) {
-  try {
-    console.log("Refunding order ID:", orderId, "amount:", amount);
-    const response = await fetch(`${MOTO_API_BASE_URL}/api/orders/refund/${orderId}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        refund_amount: amount
-      }),
-    });
+  // Order methods
+  async createOrder(orderData: any): Promise<any> {
+    return this.executeRequest("/orders/create", orderData);
+  }
 
-    const responseText = await response.text();
-    
-    if (!response.ok) {
-      throw new Error(`Failed to refund order: ${response.status} - ${responseText}`);
-    }
+  async getOrdersList(params: any = {}): Promise<any> {
+    return this.executeRequest("/orders/list", params, "GET");
+  }
 
-    let data;
-    try {
-      data = JSON.parse(responseText);
-    } catch (e) {
-      throw new Error(`Invalid JSON response from orders/refund: ${responseText}`);
-    }
-    
-    return data;
-  } catch (error) {
-    console.error("Error refunding order:", error);
-    throw error;
+  async cancelOrder(orderId: number): Promise<any> {
+    return this.executeRequest(`/orders/cancel/${orderId}`, {}, "GET");
+  }
+
+  async refundOrder(orderId: number, amount: string): Promise<any> {
+    return this.executeRequest(`/orders/refund/${orderId}`, { refund_amount: amount });
+  }
+
+  // Terminal methods
+  async getTerminalList(): Promise<any> {
+    return this.executeRequest("/terminals/list", {}, "GET");
   }
 }
 
@@ -245,8 +201,11 @@ serve(async (req) => {
     }
 
     console.log("API credentials found, proceeding with request");
+    
+    // Initialize the Realisto API service
+    const realistoService = new RealistoService(MOTO_API_KEY, MOTO_API_SECRET);
 
-    // Get the request body
+    // Parse request body
     let body = {};
     try {
       body = await req.json();
@@ -267,28 +226,11 @@ serve(async (req) => {
       });
     }
 
-    // Get access token
-    let token;
-    try {
-      token = await getAccessToken(MOTO_API_KEY, MOTO_API_SECRET);
-      console.log("Got access token successfully");
-    } catch (error) {
-      console.error("Failed to get access token:", error);
-      return new Response(JSON.stringify({ 
-        error: `Authentication failed with MOTO API: ${error.message}`,
-        details: "Please check the MOTO API credentials in your environment variables."
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 401,
-      });
-    }
-
     let result;
-
     try {
       switch (action) {
         case "create-order":
-          // Remove the action from the body before passing to the API
+          // Extract order data from body, removing the action field
           const { action: _, ...orderData } = body;
           
           // Validate required order data
@@ -313,13 +255,20 @@ serve(async (req) => {
             });
           }
           
-          result = await createOrder(token, orderData);
+          // Clean the data by removing undefined/null values
+          const cleanData = JSON.parse(JSON.stringify(orderData, (key, value) => {
+            return value === undefined || value === null ? undefined : value;
+          }));
+          
+          result = await realistoService.createOrder(cleanData);
           break;
+          
         case "orders-list":
           // Remove action from filters
           const { action: __, ...filters } = body;
-          result = await getOrdersList(token, filters);
+          result = await realistoService.getOrdersList(filters);
           break;
+          
         case "cancel-order":
           if (!body.orderId) {
             return new Response(JSON.stringify({ error: "Order ID is required" }), {
@@ -327,8 +276,9 @@ serve(async (req) => {
               status: 400,
             });
           }
-          result = await cancelOrder(token, body.orderId);
+          result = await realistoService.cancelOrder(body.orderId);
           break;
+          
         case "refund-order":
           if (!body.orderId || !body.amount) {
             return new Response(JSON.stringify({ error: "Order ID and amount are required" }), {
@@ -336,8 +286,13 @@ serve(async (req) => {
               status: 400,
             });
           }
-          result = await refundOrder(token, body.orderId, body.amount);
+          result = await realistoService.refundOrder(body.orderId, body.amount);
           break;
+          
+        case "get-terminals":
+          result = await realistoService.getTerminalList();
+          break;
+          
         default:
           return new Response(JSON.stringify({ error: "Invalid action" }), {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -350,7 +305,7 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Operation failed:", error);
       return new Response(JSON.stringify({ 
         error: error.message,
@@ -360,7 +315,7 @@ serve(async (req) => {
         status: 500,
       });
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error("Unhandled error:", error);
     return new Response(JSON.stringify({ 
       error: "An unexpected error occurred",
