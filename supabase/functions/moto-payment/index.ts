@@ -39,11 +39,16 @@ class RealistoService {
         }),
       });
 
+      console.log("Login response status:", response.status);
+      
       if (!response.ok) {
-        throw new Error(`Login failed with status ${response.status}`);
+        const errorText = await response.text();
+        console.error("Login error response:", errorText);
+        throw new Error(`Login failed with status ${response.status}: ${errorText}`);
       }
 
       const data = await response.json();
+      console.log("Login response:", JSON.stringify(data));
 
       if (!data.access_token) {
         throw new Error("No access token received");
@@ -67,6 +72,26 @@ class RealistoService {
     console.log("Creating order with data:", JSON.stringify(orderData, null, 2));
 
     try {
+      // Ensure that URLs in OrdersApiData are properly formatted
+      if (orderData.OrdersApiData) {
+        // Make sure okUrl and koUrl have the order ID parameter
+        if (orderData.OrdersApiData.okUrl && !orderData.OrdersApiData.okUrl.includes('?id=')) {
+          const orderId = orderData.OrdersApiData.merchant_order_id;
+          if (orderId) {
+            orderData.OrdersApiData.okUrl = `${orderData.OrdersApiData.okUrl}?id=${orderId}`;
+          }
+        }
+        
+        if (orderData.OrdersApiData.koUrl && !orderData.OrdersApiData.koUrl.includes('?id=')) {
+          const orderId = orderData.OrdersApiData.merchant_order_id;
+          if (orderId) {
+            orderData.OrdersApiData.koUrl = `${orderData.OrdersApiData.koUrl}?id=${orderId}`;
+          }
+        }
+      }
+
+      console.log("Making request to API with prepared data:", JSON.stringify(orderData, null, 2));
+
       const response = await fetch(`${this.baseUrl}/orders/create`, {
         method: "POST",
         headers: {
@@ -76,8 +101,10 @@ class RealistoService {
         body: JSON.stringify(orderData),
       });
 
+      console.log("Create order response status:", response.status);
+      
       const responseText = await response.text();
-      console.log("API Response:", responseText);
+      console.log("API Response raw text:", responseText);
 
       if (!response.ok) {
         throw new Error(`Failed to create order: ${responseText}`);
@@ -85,7 +112,7 @@ class RealistoService {
 
       try {
         const data = JSON.parse(responseText);
-        console.log("Parsed response data:", data);
+        console.log("Parsed response data:", JSON.stringify(data, null, 2));
         return data;
       } catch (e) {
         throw new Error(`Invalid JSON response: ${responseText}`);
@@ -95,6 +122,8 @@ class RealistoService {
       throw error;
     }
   }
+  
+  // Additional methods for other operations can be added here
 }
 
 serve(async (req) => {
@@ -111,9 +140,11 @@ serve(async (req) => {
     const MOTO_API_SECRET = Deno.env.get("MOTO_API_SECRET");
     
     if (!MOTO_API_KEY || !MOTO_API_SECRET) {
+      console.error("Missing API credentials:", { key: !!MOTO_API_KEY, secret: !!MOTO_API_SECRET });
       throw new Error("Missing MOTO API credentials");
     }
 
+    console.log("API credentials loaded successfully");
     const service = new RealistoService(MOTO_API_KEY, MOTO_API_SECRET);
 
     // Parse request body
@@ -139,12 +170,32 @@ serve(async (req) => {
           throw new Error("Missing required URLs");
         }
 
+        if (!body.OrdersApiData.merchant_order_id) {
+          console.warn("merchant_order_id is missing, this may cause issues with redirection");
+        }
+
         result = await service.createOrder({
           Orders: body.Orders,
           Customers: body.Customers,
           OrdersApiData: body.OrdersApiData
         });
         break;
+
+      case "orders-list":
+        // For future implementation
+        throw new Error("Orders list not implemented yet");
+        
+      case "get-terminals":
+        // For future implementation
+        throw new Error("Get terminals not implemented yet");
+        
+      case "cancel-order":
+        // For future implementation
+        throw new Error("Cancel order not implemented yet");
+        
+      case "refund-order":
+        // For future implementation
+        throw new Error("Refund order not implemented yet");
 
       default:
         throw new Error("Invalid action");

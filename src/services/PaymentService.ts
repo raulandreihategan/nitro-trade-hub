@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 /**
@@ -37,6 +38,17 @@ export class PaymentService {
     try {
       console.log('Creating payment order with data:', orderData);
       
+      // Ensure URLs include the order ID parameter if it exists
+      if (orderData.OrdersApiData.merchant_order_id) {
+        if (!orderData.OrdersApiData.okUrl.includes('?id=')) {
+          orderData.OrdersApiData.okUrl = `${orderData.OrdersApiData.okUrl}?id=${orderData.OrdersApiData.merchant_order_id}`;
+        }
+        
+        if (!orderData.OrdersApiData.koUrl.includes('?id=')) {
+          orderData.OrdersApiData.koUrl = `${orderData.OrdersApiData.koUrl}?id=${orderData.OrdersApiData.merchant_order_id}`;
+        }
+      }
+      
       const { data, error } = await supabase.functions.invoke('moto-payment', {
         body: {
           action: 'create-order',
@@ -51,13 +63,36 @@ export class PaymentService {
       
       console.log('Payment order created successfully:', data);
       
-      if (data && data.pay_url) {
-        console.log('Redirecting to payment page:', data.pay_url);
-        window.location.href = data.pay_url;
-        return data;
+      // Check different possible response structures for the payment URL
+      let paymentUrl = null;
+      
+      if (data) {
+        // Try accessing the URL from various possible response structures
+        if (data.pay_url) {
+          paymentUrl = data.pay_url;
+        } else if (data.body && data.body.pay_url) {
+          paymentUrl = data.body.pay_url;
+        } else if (data.response && data.response.pay_url) {
+          paymentUrl = data.response.pay_url;
+        } else if (typeof data === 'string' && data.includes('http')) {
+          // In case API returns a direct URL string
+          paymentUrl = data.trim();
+        }
+        
+        // Log what we found for debugging
+        console.log('Payment URL found:', paymentUrl);
+        
+        if (paymentUrl) {
+          console.log('Redirecting to payment page:', paymentUrl);
+          window.location.href = paymentUrl;
+          return data;
+        } else {
+          console.error('No payment URL could be extracted from API response:', data);
+          throw new Error('No payment URL found in the payment gateway response');
+        }
       } else {
-        console.error('No payment URL returned from API:', data);
-        throw new Error('No payment URL returned from the payment gateway');
+        console.error('No data returned from API');
+        throw new Error('No response received from the payment gateway');
       }
     } catch (error: any) {
       console.error('Error creating payment order:', error);
