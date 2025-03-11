@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 /**
@@ -36,6 +37,12 @@ export class PaymentService {
   }) {
     try {
       console.log('Creating payment order with data:', orderData);
+
+      // Generate a merchant_order_id if not provided
+      if (!orderData.OrdersApiData.merchant_order_id) {
+        orderData.OrdersApiData.merchant_order_id = `order-${Date.now()}`;
+        console.log('Generated merchant_order_id:', orderData.OrdersApiData.merchant_order_id);
+      }
 
       const { data, error } = await supabase.functions.invoke('moto-payment', {
         body: {

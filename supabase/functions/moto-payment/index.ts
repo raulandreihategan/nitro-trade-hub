@@ -8,14 +8,14 @@ const corsHeaders = {
 
 class RealistoService {
   private baseUrl = "https://dashboard.realisto.net/api";
-  private apiKey: string;
-  private apiSecret: string;
+  private username: string;
+  private password: string;
   private authToken: string | null = null;
   private tokenExpiry: number | null = null;
 
-  constructor(apiKey: string, apiSecret: string) {
-    this.apiKey = apiKey;
-    this.apiSecret = apiSecret;
+  constructor(username: string, password: string) {
+    this.username = username;
+    this.password = password;
   }
 
   async login(): Promise<string> {
@@ -28,33 +28,44 @@ class RealistoService {
     }
 
     try {
+      console.log("Making login request with username/password credentials");
       const response = await fetch(`${this.baseUrl}/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          api_key: this.apiKey,
-          api_secret: this.apiSecret,
+          username: this.username,
+          password: this.password,
         }),
       });
 
       console.log("Login response status:", response.status);
       
+      const responseText = await response.text();
+      console.log("Login raw response:", responseText);
+      
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Login error response:", errorText);
-        throw new Error(`Login failed with status ${response.status}: ${errorText}`);
+        console.error("Login error response:", responseText);
+        throw new Error(`Login failed with status ${response.status}: ${responseText}`);
       }
 
-      const data = await response.json();
-      console.log("Login response:", JSON.stringify(data));
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        console.error("Failed to parse JSON response:", e);
+        throw new Error(`Invalid JSON in login response: ${responseText}`);
+      }
+      
+      console.log("Login response data:", JSON.stringify(data));
 
-      if (!data.access_token) {
-        throw new Error("No access token received");
+      if (!data.access_token && !data.token) {
+        throw new Error(`No access token received in response: ${JSON.stringify(data)}`);
       }
 
-      this.authToken = data.access_token;
+      // Handle different response formats
+      this.authToken = data.access_token || data.token;
       // Set token expiry to 9.5 minutes
       this.tokenExpiry = Date.now() + (9.5 * 60 * 1000);
       
@@ -68,25 +79,29 @@ class RealistoService {
 
   async createOrder(orderData: any): Promise<any> {
     const token = await this.login();
-
+    
     console.log("Creating order with data:", JSON.stringify(orderData, null, 2));
 
     try {
-      // Ensure that URLs in OrdersApiData are properly formatted
+      // Ensure that URLs in OrdersApiData are properly formatted with order ID
       if (orderData.OrdersApiData) {
+        const merchantOrderId = orderData.OrdersApiData.merchant_order_id || `order-${Date.now()}`;
+        
+        // Set a default merchant_order_id if not provided
+        if (!orderData.OrdersApiData.merchant_order_id) {
+          orderData.OrdersApiData.merchant_order_id = merchantOrderId;
+          console.log("Generated merchant_order_id:", merchantOrderId);
+        }
+        
         // Make sure okUrl and koUrl have the order ID parameter
         if (orderData.OrdersApiData.okUrl && !orderData.OrdersApiData.okUrl.includes('?id=')) {
-          const orderId = orderData.OrdersApiData.merchant_order_id;
-          if (orderId) {
-            orderData.OrdersApiData.okUrl = `${orderData.OrdersApiData.okUrl}?id=${orderId}`;
-          }
+          orderData.OrdersApiData.okUrl = `${orderData.OrdersApiData.okUrl}?id=${merchantOrderId}`;
+          console.log("Updated okUrl:", orderData.OrdersApiData.okUrl);
         }
         
         if (orderData.OrdersApiData.koUrl && !orderData.OrdersApiData.koUrl.includes('?id=')) {
-          const orderId = orderData.OrdersApiData.merchant_order_id;
-          if (orderId) {
-            orderData.OrdersApiData.koUrl = `${orderData.OrdersApiData.koUrl}?id=${orderId}`;
-          }
+          orderData.OrdersApiData.koUrl = `${orderData.OrdersApiData.koUrl}?id=${merchantOrderId}`;
+          console.log("Updated koUrl:", orderData.OrdersApiData.koUrl);
         }
       }
 
@@ -115,6 +130,11 @@ class RealistoService {
         console.log("Parsed response data:", JSON.stringify(data, null, 2));
         return data;
       } catch (e) {
+        console.log("Response was not JSON, checking if it's a direct URL");
+        // If response is not JSON but contains http, it might be a direct URL
+        if (responseText.trim().startsWith('http')) {
+          return { pay_url: responseText.trim() };
+        }
         throw new Error(`Invalid JSON response: ${responseText}`);
       }
     } catch (error) {
@@ -134,16 +154,17 @@ serve(async (req) => {
   }
 
   try {
-    const MOTO_API_KEY = Deno.env.get("MOTO_API_KEY");
-    const MOTO_API_SECRET = Deno.env.get("MOTO_API_SECRET");
+    // Using username/password authentication instead of API key/secret
+    const REALISTO_USERNAME = Deno.env.get("MOTO_API_KEY") || "nitrogames";
+    const REALISTO_PASSWORD = Deno.env.get("MOTO_API_SECRET") || "ddR51x671$";
     
-    if (!MOTO_API_KEY || !MOTO_API_SECRET) {
-      console.error("Missing API credentials:", { key: !!MOTO_API_KEY, secret: !!MOTO_API_SECRET });
-      throw new Error("Missing MOTO API credentials");
+    if (!REALISTO_USERNAME || !REALISTO_PASSWORD) {
+      console.error("Missing credentials:", { username: !!REALISTO_USERNAME, password: !!REALISTO_PASSWORD });
+      throw new Error("Missing Realisto API credentials");
     }
 
     console.log("API credentials loaded successfully");
-    const service = new RealistoService(MOTO_API_KEY, MOTO_API_SECRET);
+    const service = new RealistoService(REALISTO_USERNAME, REALISTO_PASSWORD);
 
     // Parse request body
     const body = await req.json();
@@ -194,11 +215,10 @@ serve(async (req) => {
     console.error("Operation failed:", error);
     return new Response(JSON.stringify({
       error: error.message,
-      details: "Operation failed with the MOTO API"
+      details: "Operation failed with the Realisto API"
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500
     });
   }
 });
-
