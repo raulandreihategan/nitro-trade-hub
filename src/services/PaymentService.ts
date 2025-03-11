@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 /**
@@ -37,18 +36,7 @@ export class PaymentService {
   }) {
     try {
       console.log('Creating payment order with data:', orderData);
-      
-      // Ensure URLs include the order ID parameter if it exists
-      if (orderData.OrdersApiData.merchant_order_id) {
-        if (!orderData.OrdersApiData.okUrl.includes('?id=')) {
-          orderData.OrdersApiData.okUrl = `${orderData.OrdersApiData.okUrl}?id=${orderData.OrdersApiData.merchant_order_id}`;
-        }
-        
-        if (!orderData.OrdersApiData.koUrl.includes('?id=')) {
-          orderData.OrdersApiData.koUrl = `${orderData.OrdersApiData.koUrl}?id=${orderData.OrdersApiData.merchant_order_id}`;
-        }
-      }
-      
+
       const { data, error } = await supabase.functions.invoke('moto-payment', {
         body: {
           action: 'create-order',

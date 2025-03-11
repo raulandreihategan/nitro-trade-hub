@@ -122,8 +122,6 @@ class RealistoService {
       throw error;
     }
   }
-  
-  // Additional methods for other operations can be added here
 }
 
 serve(async (req) => {
@@ -170,10 +168,6 @@ serve(async (req) => {
           throw new Error("Missing required URLs");
         }
 
-        if (!body.OrdersApiData.merchant_order_id) {
-          console.warn("merchant_order_id is missing, this may cause issues with redirection");
-        }
-
         result = await service.createOrder({
           Orders: body.Orders,
           Customers: body.Customers,
@@ -182,20 +176,10 @@ serve(async (req) => {
         break;
 
       case "orders-list":
-        // For future implementation
-        throw new Error("Orders list not implemented yet");
-        
       case "get-terminals":
-        // For future implementation
-        throw new Error("Get terminals not implemented yet");
-        
       case "cancel-order":
-        // For future implementation
-        throw new Error("Cancel order not implemented yet");
-        
       case "refund-order":
-        // For future implementation
-        throw new Error("Refund order not implemented yet");
+        throw new Error(`${body.action} not implemented yet`);
 
       default:
         throw new Error("Invalid action");
@@ -217,3 +201,4 @@ serve(async (req) => {
     });
   }
 });
+
