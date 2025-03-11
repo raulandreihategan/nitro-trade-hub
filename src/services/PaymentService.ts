@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 /**
@@ -7,7 +6,6 @@ import { supabase } from "@/integrations/supabase/client";
 export class PaymentService {
   /**
    * Creates a new payment order
-   * @param orderData Order data as required by the MOTO API
    */
   static async createOrder(orderData: {
     Orders: {
@@ -39,70 +37,23 @@ export class PaymentService {
     try {
       console.log('Creating payment order with data:', orderData);
       
-      // Deep clean the orderData to remove undefined values, null values, and empty strings
-      const cleanOrderData = (obj: any): any => {
-        if (obj === null || obj === undefined) return undefined;
-        if (typeof obj !== 'object') return obj;
-        
-        if (Array.isArray(obj)) {
-          return obj.map(cleanOrderData).filter(item => item !== undefined);
-        }
-        
-        const result: any = {};
-        let isEmpty = true;
-        
-        for (const key in obj) {
-          const value = cleanOrderData(obj[key]);
-          if (value !== undefined && value !== '' && value !== null) {
-            result[key] = value;
-            isEmpty = false;
-          }
-        }
-        
-        return isEmpty ? undefined : result;
-      };
-      
-      const cleanedData = cleanOrderData(orderData);
-      console.log('Cleaned payment order data:', cleanedData);
-      
       const { data, error } = await supabase.functions.invoke('moto-payment', {
         body: {
           action: 'create-order',
-          ...cleanedData,
+          ...orderData,
         },
       });
 
       if (error) {
         console.error('Supabase function error:', error);
-        
-        // Enhance the koUrl with error information if possible
-        if (cleanedData.OrdersApiData && cleanedData.OrdersApiData.koUrl) {
-          const errorMessage = error.message || "Payment processing failed";
-          const errorDetails = error.details || "Please check with support or try again";
-          
-          // Create a URL object to manipulate the URL
-          const koUrl = new URL(cleanedData.OrdersApiData.koUrl);
-          
-          // Add error as a URL parameter, properly encoded
-          const errorObj = {
-            error: errorMessage,
-            details: errorDetails
-          };
-          koUrl.searchParams.set('error', encodeURIComponent(JSON.stringify(errorObj)));
-          
-          // Redirect to the enhanced failure URL
-          window.location.href = koUrl.toString();
-          return null;
-        }
-        
         throw error;
       }
       
       console.log('Payment order created successfully:', data);
       
-      // Check if we have a payment URL to redirect to
-      if (data && data.body && data.body.pay_url) {
-        console.log('Redirecting to payment page:', data.body.pay_url);
+      if (data && data.pay_url) {
+        console.log('Redirecting to payment page:', data.pay_url);
+        window.location.href = data.pay_url;
         return data;
       } else {
         console.error('No payment URL returned from API:', data);

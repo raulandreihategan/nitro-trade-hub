@@ -1,13 +1,11 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-// Define CORS headers
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Realisto API service class
 class RealistoService {
   private baseUrl = "https://dashboard.realisto.net/api";
   private apiKey: string;
@@ -30,12 +28,6 @@ class RealistoService {
     }
 
     try {
-      if (!this.apiKey || !this.apiSecret) {
-        throw new Error("API key or secret is empty or undefined");
-      }
-      
-      console.log(`Using credentials: API Key starts with: ${this.apiKey.substring(0, 3)}... and API Secret starts with: ${this.apiSecret.substring(0, 3)}...`);
-      
       const response = await fetch(`${this.baseUrl}/login`, {
         method: "POST",
         headers: {
@@ -47,33 +39,18 @@ class RealistoService {
         }),
       });
 
-      const responseText = await response.text();
-      console.log(`Login response status: ${response.status}`);
-      
-      // Log a portion of the response for debugging
-      if (responseText.length > 200) {
-        console.log(`Login response body (truncated): ${responseText.substring(0, 200)}...`);
-      } else {
-        console.log(`Login response body: ${responseText}`);
-      }
-
       if (!response.ok) {
-        throw new Error(`Login failed with status ${response.status}: ${responseText}`);
+        throw new Error(`Login failed with status ${response.status}`);
       }
 
-      let data;
-      try {
-        data = JSON.parse(responseText);
-      } catch (e) {
-        throw new Error(`Invalid JSON response from login: ${responseText}`);
-      }
+      const data = await response.json();
 
       if (!data.access_token) {
-        throw new Error(data.messages || "Failed to get access token");
+        throw new Error("No access token received");
       }
 
       this.authToken = data.access_token;
-      // Set token expiry to 9.5 minutes (570 seconds) to be safe
+      // Set token expiry to 9.5 minutes
       this.tokenExpiry = Date.now() + (9.5 * 60 * 1000);
       
       console.log("Successfully obtained access token");
@@ -84,103 +61,46 @@ class RealistoService {
     }
   }
 
-  async executeRequest(url: string, data: any = {}, method: string = "POST"): Promise<any> {
-    // Make sure we have a valid token
+  async createOrder(orderData: any): Promise<any> {
     const token = await this.login();
-    const fullUrl = `${this.baseUrl}${url}`;
-    
-    console.log(`Executing ${method} request to ${fullUrl}`);
-    
-    const headers: HeadersInit = {
-      "Authorization": `Bearer ${token}`,
-      "Content-Type": "application/json",
-    };
 
-    const options: RequestInit = {
-      method,
-      headers,
-    };
-
-    if (method.toUpperCase() === "GET") {
-      // For GET requests, add params to URL
-      const params = new URLSearchParams();
-      for (const key in data) {
-        if (data[key] !== undefined && data[key] !== null) {
-          params.append(key, data[key]);
-        }
-      }
-      
-      const queryString = params.toString();
-      if (queryString) {
-        const separator = url.includes("?") ? "&" : "?";
-        url = `${url}${separator}${queryString}`;
-      }
-    } else if (["POST", "PUT", "PATCH"].includes(method.toUpperCase())) {
-      // For other methods, add data to body
-      options.body = JSON.stringify(data);
-    }
+    console.log("Creating order with data:", JSON.stringify(orderData, null, 2));
 
     try {
-      console.log(`Request options: ${JSON.stringify(options, null, 2)}`);
-      
-      const response = await fetch(fullUrl, options);
+      const response = await fetch(`${this.baseUrl}/orders/create`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(orderData),
+      });
+
       const responseText = await response.text();
-      
-      console.log(`API response status: ${response.status}`);
-      if (responseText.length > 200) {
-        console.log(`API response body (truncated): ${responseText.substring(0, 200)}...`);
-      } else {
-        console.log(`API response body: ${responseText}`);
-      }
+      console.log("API Response:", responseText);
 
       if (!response.ok) {
-        throw new Error(`Request failed with status ${response.status}: ${responseText}`);
+        throw new Error(`Failed to create order: ${responseText}`);
       }
 
-      let responseData;
       try {
-        responseData = JSON.parse(responseText);
+        const data = JSON.parse(responseText);
+        console.log("Parsed response data:", data);
+        return data;
       } catch (e) {
         throw new Error(`Invalid JSON response: ${responseText}`);
       }
-
-      return responseData;
     } catch (error) {
-      console.error(`Error executing ${method} request to ${url}:`, error);
+      console.error("Error creating order:", error);
       throw error;
     }
-  }
-
-  // Order methods
-  async createOrder(orderData: any): Promise<any> {
-    return this.executeRequest("/orders/create", orderData);
-  }
-
-  async getOrdersList(params: any = {}): Promise<any> {
-    return this.executeRequest("/orders/list", params, "GET");
-  }
-
-  async cancelOrder(orderId: number): Promise<any> {
-    return this.executeRequest(`/orders/cancel/${orderId}`, {}, "GET");
-  }
-
-  async refundOrder(orderId: number, amount: string): Promise<any> {
-    return this.executeRequest(`/orders/refund/${orderId}`, { refund_amount: amount });
-  }
-
-  // Terminal methods
-  async getTerminalList(): Promise<any> {
-    return this.executeRequest("/terminals/list", {}, "GET");
   }
 }
 
 serve(async (req) => {
-  console.log("Received request:", req.method, req.url);
-  
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
-    console.log("Handling OPTIONS request");
-    return new Response(null, { 
+    return new Response(null, {
       headers: corsHeaders,
       status: 200
     });
@@ -191,138 +111,58 @@ serve(async (req) => {
     const MOTO_API_SECRET = Deno.env.get("MOTO_API_SECRET");
     
     if (!MOTO_API_KEY || !MOTO_API_SECRET) {
-      console.error("MOTO API credentials are not set in environment variables");
-      return new Response(JSON.stringify({ 
-        error: "MOTO API credentials are not configured properly on the server" 
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
-      });
+      throw new Error("Missing MOTO API credentials");
     }
 
-    console.log("API credentials found, proceeding with request");
-    
-    // Initialize the Realisto API service
-    const realistoService = new RealistoService(MOTO_API_KEY, MOTO_API_SECRET);
+    const service = new RealistoService(MOTO_API_KEY, MOTO_API_SECRET);
 
     // Parse request body
-    let body = {};
-    try {
-      body = await req.json();
-      console.log("Request body:", JSON.stringify(body, null, 2));
-    } catch (e) {
-      console.error("Error parsing request body:", e);
-      return new Response(JSON.stringify({ error: "Invalid JSON body" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 400,
-      });
-    }
+    const body = await req.json();
+    console.log("Received request:", JSON.stringify(body, null, 2));
 
-    const action = body.action;
-    if (!action) {
-      return new Response(JSON.stringify({ error: "Action is required" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 400,
-      });
+    if (!body.action) {
+      throw new Error("Missing action parameter");
     }
 
     let result;
-    try {
-      switch (action) {
-        case "create-order":
-          // Extract order data from body, removing the action field
-          const { action: _, ...orderData } = body;
-          
-          // Validate required order data
-          if (!orderData.Orders || !orderData.Orders.amount) {
-            return new Response(JSON.stringify({ error: "Orders.amount is required" }), {
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
-              status: 400,
-            });
-          }
-          
-          if (!orderData.Customers || !orderData.Customers.client_name || !orderData.Customers.mail) {
-            return new Response(JSON.stringify({ error: "Customers.client_name and Customers.mail are required" }), {
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
-              status: 400,
-            });
-          }
-          
-          if (!orderData.OrdersApiData || !orderData.OrdersApiData.okUrl || !orderData.OrdersApiData.koUrl) {
-            return new Response(JSON.stringify({ error: "OrdersApiData.okUrl and OrdersApiData.koUrl are required" }), {
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
-              status: 400,
-            });
-          }
-          
-          // Clean the data by removing undefined/null values
-          const cleanData = JSON.parse(JSON.stringify(orderData, (key, value) => {
-            return value === undefined || value === null ? undefined : value;
-          }));
-          
-          result = await realistoService.createOrder(cleanData);
-          break;
-          
-        case "orders-list":
-          // Remove action from filters
-          const { action: __, ...filters } = body;
-          result = await realistoService.getOrdersList(filters);
-          break;
-          
-        case "cancel-order":
-          if (!body.orderId) {
-            return new Response(JSON.stringify({ error: "Order ID is required" }), {
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
-              status: 400,
-            });
-          }
-          result = await realistoService.cancelOrder(body.orderId);
-          break;
-          
-        case "refund-order":
-          if (!body.orderId || !body.amount) {
-            return new Response(JSON.stringify({ error: "Order ID and amount are required" }), {
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
-              status: 400,
-            });
-          }
-          result = await realistoService.refundOrder(body.orderId, body.amount);
-          break;
-          
-        case "get-terminals":
-          result = await realistoService.getTerminalList();
-          break;
-          
-        default:
-          return new Response(JSON.stringify({ error: "Invalid action" }), {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-            status: 400,
-          });
-      }
+    switch (body.action) {
+      case "create-order":
+        if (!body.Orders?.amount) {
+          throw new Error("Missing required field: Orders.amount");
+        }
+        
+        if (!body.Customers?.client_name || !body.Customers?.mail) {
+          throw new Error("Missing required customer information");
+        }
+        
+        if (!body.OrdersApiData?.okUrl || !body.OrdersApiData?.koUrl) {
+          throw new Error("Missing required URLs");
+        }
 
-      console.log("Operation successful, returning result:", JSON.stringify(result, null, 2));
-      return new Response(JSON.stringify(result), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
-    } catch (error: any) {
-      console.error("Operation failed:", error);
-      return new Response(JSON.stringify({ 
-        error: error.message,
-        details: "Operation failed with the MOTO API"
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
-      });
+        result = await service.createOrder({
+          Orders: body.Orders,
+          Customers: body.Customers,
+          OrdersApiData: body.OrdersApiData
+        });
+        break;
+
+      default:
+        throw new Error("Invalid action");
     }
+
+    return new Response(JSON.stringify(result), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 200
+    });
+
   } catch (error: any) {
-    console.error("Unhandled error:", error);
-    return new Response(JSON.stringify({ 
-      error: "An unexpected error occurred",
-      details: error.message
+    console.error("Operation failed:", error);
+    return new Response(JSON.stringify({
+      error: error.message,
+      details: "Operation failed with the MOTO API"
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
+      status: 500
     });
   }
 });
