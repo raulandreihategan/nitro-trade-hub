@@ -29,6 +29,11 @@ class RealistoService {
 
     try {
       console.log("Making login request with API key/secret");
+      
+      // Log key and secret format (not values) for debugging
+      console.log(`API Key format: ${this.apiKey ? `${this.apiKey.substring(0, 3)}...${this.apiKey.substring(this.apiKey.length - 3)}` : 'undefined'}`);
+      console.log(`API Secret format: ${this.apiSecret ? `${this.apiSecret.substring(0, 3)}...${this.apiSecret.substring(this.apiSecret.length - 3)}` : 'undefined'}`);
+      
       const response = await fetch(`${this.baseUrl}/login`, {
         method: "POST",
         headers: {
@@ -154,13 +159,13 @@ serve(async (req) => {
   }
 
   try {
-    // Using API key/secret authentication
-    const REALISTO_API_KEY = Deno.env.get("MOTO_API_KEY") || "OMTTHrkXBzH_bZTtNeW0FowWpdHu9YJK0_KN";
-    const REALISTO_API_SECRET = Deno.env.get("MOTO_API_SECRET") || "RLC7VwpLmgoLu1hufBJ-R8aXjybijRRrUmPM";
+    // Get API credentials from environment variables
+    const REALISTO_API_KEY = Deno.env.get("MOTO_API_KEY");
+    const REALISTO_API_SECRET = Deno.env.get("MOTO_API_SECRET");
     
     if (!REALISTO_API_KEY || !REALISTO_API_SECRET) {
       console.error("Missing credentials:", { apiKey: !!REALISTO_API_KEY, apiSecret: !!REALISTO_API_SECRET });
-      throw new Error("Missing Realisto API credentials");
+      throw new Error("Missing Realisto API credentials. Make sure MOTO_API_KEY and MOTO_API_SECRET are set in the Supabase secrets.");
     }
 
     console.log("API credentials loaded successfully");

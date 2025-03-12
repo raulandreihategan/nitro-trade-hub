@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 /**
@@ -49,7 +48,7 @@ export class PaymentService {
           value === null ||
           (typeof value === 'object' && value !== null && 
             // Check if 'type' property exists and has value 'undefined'
-            (('type' in value) && (value as any).type === 'undefined'))
+            ('_type' in value && value._type === 'undefined'))
         ) {
           delete customers[key as keyof typeof customers];
         }
