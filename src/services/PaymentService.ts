@@ -49,7 +49,7 @@ export class PaymentService {
           value === null ||
           (typeof value === 'object' && value !== null && 
             // Check if '_type' property exists and has value 'undefined'
-            ('_type' in value) && (value as any)._type === 'undefined')
+            ('_type' in value) && ((value as any)._type === 'undefined'))
         ) {
           delete customers[key as keyof typeof customers];
         }

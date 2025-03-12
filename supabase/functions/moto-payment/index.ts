@@ -98,24 +98,30 @@ class RealistoService {
     console.log("Creating order with data:", JSON.stringify(orderData, null, 2));
 
     try {
-      // Format the phone number correctly for the API
-      if (orderData.Customers) {
-        // If mobile exists, format it correctly and map to phoneNumber 
-        if (orderData.Customers.mobile) {
-          // Make sure the phone number is in the right format
-          const phoneNumber = orderData.Customers.mobile.replace(/\s+/g, '');
-          
-          // If it doesn't start with +, add it
-          orderData.Customers.phoneNumber = phoneNumber.startsWith('+') 
-            ? phoneNumber 
-            : `+${phoneNumber}`;
-            
-          console.log("Mapped mobile to phoneNumber:", orderData.Customers.phoneNumber);
-          
-          // Remove mobile to avoid duplicate fields
-          delete orderData.Customers.mobile;
+      // Create a new customer data object
+      const newCustomerData = { ...orderData.Customers };
+      
+      // Remove mobile from customer data to avoid duplication
+      delete newCustomerData.mobile;
+      
+      // Check if we have a phone number and format it correctly
+      if (orderData.Customers && orderData.Customers.mobile) {
+        // Make sure the phone number is in the right format
+        let phoneNumber = orderData.Customers.mobile.replace(/\s+/g, '');
+        
+        // If it doesn't start with +, add it
+        if (!phoneNumber.startsWith('+')) {
+          phoneNumber = `+${phoneNumber}`;
         }
+            
+        // Explicitly add phoneNumber as a separate field in the expected format
+        newCustomerData.phoneNumber = phoneNumber;
+        
+        console.log("Mapped mobile to phoneNumber:", phoneNumber);
       }
+      
+      // Replace the customer data with our new object
+      orderData.Customers = newCustomerData;
 
       // Ensure that URLs in OrdersApiData are properly formatted with order ID
       if (orderData.OrdersApiData) {
