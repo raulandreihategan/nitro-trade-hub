@@ -44,7 +44,7 @@ export class PaymentService {
       // Filter out undefined or invalid values
       Object.keys(customers).forEach(key => {
         const value = customers[key as keyof typeof customers];
-        if (value === undefined || (typeof value === 'object' && value?._type === 'undefined')) {
+        if (value === undefined || (typeof value === 'object' && value && value._type === 'undefined')) {
           delete customers[key as keyof typeof customers];
         }
       });
