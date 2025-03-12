@@ -88,6 +88,15 @@ class RealistoService {
     console.log("Creating order with data:", JSON.stringify(orderData, null, 2));
 
     try {
+      // Transform mobile -> phoneNumber if needed
+      if (orderData.Customers) {
+        // If mobile exists and phoneNumber doesn't, create phoneNumber from mobile
+        if (orderData.Customers.mobile && !orderData.Customers.phoneNumber) {
+          orderData.Customers.phoneNumber = orderData.Customers.mobile;
+          console.log("Mapped mobile to phoneNumber:", orderData.Customers.phoneNumber);
+        }
+      }
+
       // Ensure that URLs in OrdersApiData are properly formatted with order ID
       if (orderData.OrdersApiData) {
         const merchantOrderId = orderData.OrdersApiData.merchant_order_id || `order-${Date.now()}`;

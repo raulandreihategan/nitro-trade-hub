@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Header from '@/components/layout/Header';
@@ -127,6 +128,7 @@ const Checkout = () => {
         Customers: {
           client_name: formData.clientName,
           mail: formData.email,
+          // Properly handle mobile field - don't send undefined objects
           mobile: formData.phone || undefined,
           country: formData.country || undefined,
           city: formData.city || undefined,
