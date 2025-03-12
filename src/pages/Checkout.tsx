@@ -9,7 +9,7 @@ import { useCart } from '@/contexts/CartContext';
 import { useToast } from "@/hooks/use-toast";
 import { PaymentService } from '@/services/PaymentService';
 import { supabase } from "@/integrations/supabase/client";
-import { CreditCard, ChevronRight, ChevronLeft, Info, Loader2 } from 'lucide-react';
+import { CreditCard, ChevronRight, ChevronLeft, Info, Loader2, AlertCircle } from 'lucide-react';
 
 const Checkout = () => {
   const { items, totalPrice, clearCart } = useCart();
@@ -25,6 +25,7 @@ const Checkout = () => {
     zip: '',
     address: '',
   });
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
@@ -55,16 +56,91 @@ const Checkout = () => {
     }
   }, [items, navigate, stateParams]);
 
+  const validateField = (name: string, value: string): string => {
+    switch (name) {
+      case 'clientName':
+        return value.trim() === '' ? 'Full name is required' : '';
+      case 'email':
+        return !/^\S+@\S+\.\S+$/.test(value) ? 'Valid email is required' : '';
+      case 'phone':
+        // Allow international format: +XX XXXXXXXXXX or just numbers
+        return value && !/^(\+\d{1,3}\s?)?\d{6,14}$/.test(value.replace(/\s+/g, '')) 
+          ? 'Phone should be in international format (e.g., +34 644982327)' 
+          : '';
+      default:
+        return '';
+    }
+  };
+
+  const formatPhoneNumber = (phone: string): string => {
+    if (!phone) return '';
+    
+    // Remove all non-digit characters except the + sign at the beginning
+    let cleaned = phone.replace(/[^\d+]/g, '');
+    
+    // Ensure it starts with + if it doesn't already
+    if (!cleaned.startsWith('+')) {
+      cleaned = '+' + cleaned;
+    }
+    
+    return cleaned;
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
+    
+    // Validate the field
+    const error = validateField(name, value);
+    setErrors(prev => ({
+      ...prev,
+      [name]: error
+    }));
+  };
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+    let isValid = true;
+    
+    // Validate required fields
+    Object.entries(formData).forEach(([key, value]) => {
+      if (key === 'clientName' || key === 'email') {
+        const error = validateField(key, value.toString());
+        if (error) {
+          newErrors[key] = error;
+          isValid = false;
+        }
+      }
+      
+      // Validate phone if provided
+      if (key === 'phone' && value) {
+        const error = validateField(key, value.toString());
+        if (error) {
+          newErrors[key] = error;
+          isValid = false;
+        }
+      }
+    });
+    
+    setErrors(newErrors);
+    return isValid;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate form
+    if (!validateForm()) {
+      toast({
+        title: 'Validation Error',
+        description: 'Please correct the errors in the form.',
+        variant: 'destructive',
+      });
+      return;
+    }
     
     try {
       setIsProcessing(true);
@@ -117,6 +193,9 @@ const Checkout = () => {
         order = existingOrder;
       }
 
+      // Format phone number for the API
+      const formattedPhone = formData.phone ? formatPhoneNumber(formData.phone) : undefined;
+
       // Create payment URL with MOTO API
       const paymentResult = await PaymentService.createOrder({
         Orders: {
@@ -128,8 +207,7 @@ const Checkout = () => {
         Customers: {
           client_name: formData.clientName,
           mail: formData.email,
-          // Properly handle mobile field - don't send undefined objects
-          mobile: formData.phone || undefined,
+          mobile: formattedPhone, // Send formatted phone number
           country: formData.country || undefined,
           city: formData.city || undefined,
           state: formData.state || undefined,
@@ -172,8 +250,19 @@ const Checkout = () => {
     } catch (error: any) {
       console.error('Error during checkout:', error);
       
+      // Try to get more detailed error message
+      let errorMessage = 'There was an error processing your payment';
+      if (error.message) {
+        errorMessage = error.message;
+        
+        // Check for specific API errors
+        if (error.message.includes('phoneNumber')) {
+          errorMessage = 'Invalid phone number format. Please use international format (e.g., +34644982327)';
+          setErrors(prev => ({ ...prev, phone: errorMessage }));
+        }
+      }
+      
       // Try to encode error object in the URL
-      let errorMessage = error.message || 'There was an error processing your payment';
       let errorUrl = `/checkout/failed?id=${stateParams?.orderId || ''}`;
       
       try {
@@ -190,16 +279,12 @@ const Checkout = () => {
       
       toast({
         title: 'Checkout failed',
-        description: 'There was an error processing your payment. You will be redirected.',
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {
       setIsProcessing(false);
     }
-  };
-
-  const validateForm = () => {
-    return formData.clientName && formData.email;
   };
 
   return (
@@ -239,8 +324,15 @@ const Checkout = () => {
                         value={formData.clientName}
                         onChange={handleInputChange}
                         placeholder="John Doe"
+                        className={errors.clientName ? "border-red-500" : ""}
                         required
                       />
+                      {errors.clientName && (
+                        <p className="mt-1 text-sm text-red-600 flex items-center">
+                          <AlertCircle className="h-3 w-3 mr-1" />
+                          {errors.clientName}
+                        </p>
+                      )}
                     </div>
                     
                     <div>
@@ -254,8 +346,15 @@ const Checkout = () => {
                         value={formData.email}
                         onChange={handleInputChange}
                         placeholder="john@example.com"
+                        className={errors.email ? "border-red-500" : ""}
                         required
                       />
+                      {errors.email && (
+                        <p className="mt-1 text-sm text-red-600 flex items-center">
+                          <AlertCircle className="h-3 w-3 mr-1" />
+                          {errors.email}
+                        </p>
+                      )}
                     </div>
                   </div>
                   
@@ -268,8 +367,19 @@ const Checkout = () => {
                       name="phone"
                       value={formData.phone}
                       onChange={handleInputChange}
-                      placeholder="+1 123 456 7890"
+                      placeholder="+34 644982327"
+                      className={errors.phone ? "border-red-500" : ""}
                     />
+                    {errors.phone ? (
+                      <p className="mt-1 text-sm text-red-600 flex items-center">
+                        <AlertCircle className="h-3 w-3 mr-1" />
+                        {errors.phone}
+                      </p>
+                    ) : (
+                      <p className="mt-1 text-xs text-gray-500">
+                        Please use international format with country code (e.g., +34 644982327)
+                      </p>
+                    )}
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -282,7 +392,7 @@ const Checkout = () => {
                         name="country"
                         value={formData.country}
                         onChange={handleInputChange}
-                        placeholder="United States"
+                        placeholder="Spain"
                       />
                     </div>
                     
@@ -295,7 +405,7 @@ const Checkout = () => {
                         name="city"
                         value={formData.city}
                         onChange={handleInputChange}
-                        placeholder="New York"
+                        placeholder="Barcelona"
                       />
                     </div>
                   </div>
@@ -310,7 +420,7 @@ const Checkout = () => {
                         name="state"
                         value={formData.state}
                         onChange={handleInputChange}
-                        placeholder="NY"
+                        placeholder="BCN"
                       />
                     </div>
                     
@@ -323,7 +433,7 @@ const Checkout = () => {
                         name="zip"
                         value={formData.zip}
                         onChange={handleInputChange}
-                        placeholder="10001"
+                        placeholder="08014"
                       />
                     </div>
                     
@@ -336,7 +446,7 @@ const Checkout = () => {
                         name="address"
                         value={formData.address}
                         onChange={handleInputChange}
-                        placeholder="123 Main St, Apt 4B"
+                        placeholder="Carrer Sant Pere d'Abanto 16"
                       />
                     </div>
                   </div>
@@ -345,7 +455,7 @@ const Checkout = () => {
                     <Button
                       type="submit"
                       className="w-full flex items-center justify-center"
-                      disabled={isProcessing || !validateForm()}
+                      disabled={isProcessing || Object.values(errors).some(error => error !== '')}
                     >
                       {isProcessing ? (
                         <>

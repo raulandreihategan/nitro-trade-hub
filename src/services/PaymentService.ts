@@ -49,7 +49,7 @@ export class PaymentService {
           value === null ||
           (typeof value === 'object' && value !== null && 
             // Check if '_type' property exists and has value 'undefined'
-            (value as any)._type === 'undefined')
+            ('_type' in value) && (value as any)._type === 'undefined')
         ) {
           delete customers[key as keyof typeof customers];
         }
@@ -73,6 +73,23 @@ export class PaymentService {
 
       if (error) {
         console.error('Supabase function error:', error);
+        
+        // Enhanced error handling
+        if (typeof error === 'object' && error !== null) {
+          // Check for specific error types
+          if ('message' in error && typeof error.message === 'string') {
+            if (error.message.includes('phoneNumber')) {
+              throw new Error('Invalid phone number format. Please use international format (e.g., +34644982327)');
+            }
+            if (error.message.includes('API key')) {
+              throw new Error('Payment system configuration error: Invalid API key format');
+            }
+            if (error.message.includes('API secret')) {
+              throw new Error('Payment system configuration error: Invalid API secret format');
+            }
+          }
+        }
+        
         throw error;
       }
       

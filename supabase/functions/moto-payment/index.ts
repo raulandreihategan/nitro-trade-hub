@@ -34,6 +34,16 @@ class RealistoService {
       console.log(`API Key format: ${this.apiKey ? `${this.apiKey.substring(0, 3)}...${this.apiKey.substring(this.apiKey.length - 3)}` : 'undefined'}`);
       console.log(`API Secret format: ${this.apiSecret ? `${this.apiSecret.substring(0, 3)}...${this.apiSecret.substring(this.apiSecret.length - 3)}` : 'undefined'}`);
       
+      // Check API key format - Realisto API keys typically start with "OMT"
+      if (!this.apiKey || !this.apiKey.startsWith("OMT")) {
+        throw new Error("Invalid API key format. API key should start with 'OMT'");
+      }
+      
+      // Check API secret format - Realisto API secrets typically start with "RLC"
+      if (!this.apiSecret || !this.apiSecret.startsWith("RLC")) {
+        throw new Error("Invalid API secret format. API secret should start with 'RLC'");
+      }
+      
       const response = await fetch(`${this.baseUrl}/login`, {
         method: "POST",
         headers: {
@@ -88,12 +98,22 @@ class RealistoService {
     console.log("Creating order with data:", JSON.stringify(orderData, null, 2));
 
     try {
-      // Transform mobile -> phoneNumber if needed
+      // Format the phone number correctly for the API
       if (orderData.Customers) {
-        // If mobile exists and phoneNumber doesn't, create phoneNumber from mobile
-        if (orderData.Customers.mobile && !orderData.Customers.phoneNumber) {
-          orderData.Customers.phoneNumber = orderData.Customers.mobile;
+        // If mobile exists, format it correctly and map to phoneNumber 
+        if (orderData.Customers.mobile) {
+          // Make sure the phone number is in the right format
+          const phoneNumber = orderData.Customers.mobile.replace(/\s+/g, '');
+          
+          // If it doesn't start with +, add it
+          orderData.Customers.phoneNumber = phoneNumber.startsWith('+') 
+            ? phoneNumber 
+            : `+${phoneNumber}`;
+            
           console.log("Mapped mobile to phoneNumber:", orderData.Customers.phoneNumber);
+          
+          // Remove mobile to avoid duplicate fields
+          delete orderData.Customers.mobile;
         }
       }
 
@@ -177,7 +197,22 @@ serve(async (req) => {
       throw new Error("Missing Realisto API credentials. Make sure MOTO_API_KEY and MOTO_API_SECRET are set in the Supabase secrets.");
     }
 
+    // Validate API key format
+    if (!REALISTO_API_KEY.startsWith("OMT")) {
+      console.error("API Key format:", REALISTO_API_KEY.substring(0, 3) + "...");
+      throw new Error("Invalid API key format. API key should start with 'OMT'");
+    }
+    
+    // Validate API secret format
+    if (!REALISTO_API_SECRET.startsWith("RLC")) {
+      console.error("API Secret format:", REALISTO_API_SECRET.substring(0, 3) + "...");
+      throw new Error("Invalid API secret format. API secret should start with 'RLC'");
+    }
+
     console.log("API credentials loaded successfully");
+    console.log("API Key format:", REALISTO_API_KEY.substring(0, 3) + "...");
+    console.log("API Secret format:", REALISTO_API_SECRET.substring(0, 3) + "...");
+    
     const service = new RealistoService(REALISTO_API_KEY, REALISTO_API_SECRET);
 
     // Parse request body
@@ -227,9 +262,23 @@ serve(async (req) => {
 
   } catch (error: any) {
     console.error("Operation failed:", error);
+    
+    // Provide more detailed error for the frontend
+    let errorMessage = error.message || "Operation failed with the Realisto API";
+    let errorDetails = "Please check your API credentials and try again";
+    
+    // Handle specific errors
+    if (errorMessage.includes("Invalid API key format") || errorMessage.includes("Invalid API secret format")) {
+      errorDetails = "Please ensure your API keys are in the correct format.";
+    } else if (errorMessage.includes("Login failed")) {
+      errorDetails = "Authentication failed. Please check your API credentials.";
+    } else if (errorMessage.includes("phoneNumber")) {
+      errorDetails = "Please provide a valid phone number in international format (+XXXXXXXXXXX).";
+    }
+    
     return new Response(JSON.stringify({
-      error: error.message,
-      details: "Operation failed with the Realisto API"
+      error: errorMessage,
+      details: errorDetails
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500
