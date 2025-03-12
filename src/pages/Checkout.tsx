@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Header from '@/components/layout/Header';
@@ -62,9 +63,9 @@ const Checkout = () => {
       case 'email':
         return !/^\S+@\S+\.\S+$/.test(value) ? 'Valid email is required' : '';
       case 'phone':
-        // Validate international format: must start with + and have at least 6 digits
-        return value && !/^\+[0-9]{6,15}$/.test(value.replace(/\s+/g, '')) 
-          ? 'Phone should be in international format without spaces (e.g., +34644982327)' 
+        // Allow international format: +XX XXXXXXXXXX or just numbers
+        return value && !/^(\+\d{1,3}\s?)?\d{6,14}$/.test(value.replace(/\s+/g, '')) 
+          ? 'Phone should be in international format (e.g., +34 644982327)' 
           : '';
       default:
         return '';
@@ -75,7 +76,7 @@ const Checkout = () => {
     if (!phone) return '';
     
     // Remove all non-digit characters except the + sign at the beginning
-    let cleaned = phone.replace(/\s+/g, '');
+    let cleaned = phone.replace(/[^\d+]/g, '');
     
     // Ensure it starts with + if it doesn't already
     if (!cleaned.startsWith('+')) {
@@ -87,24 +88,13 @@ const Checkout = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    
-    // Special handling for phone number: strip spaces in real-time
-    if (name === 'phone') {
-      // Remove spaces as they type
-      const formattedValue = value.replace(/\s+/g, '');
-      setFormData(prev => ({
-        ...prev,
-        [name]: formattedValue
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value
-      }));
-    }
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
     
     // Validate the field
-    const error = validateField(name, name === 'phone' ? value.replace(/\s+/g, '') : value);
+    const error = validateField(name, value);
     setErrors(prev => ({
       ...prev,
       [name]: error
@@ -203,10 +193,8 @@ const Checkout = () => {
         order = existingOrder;
       }
 
-      // Format phone number for the API - remove all spaces
+      // Format phone number for the API
       const formattedPhone = formData.phone ? formatPhoneNumber(formData.phone) : undefined;
-
-      console.log('Formatted phone for API:', formattedPhone);
 
       // Create payment URL with MOTO API
       const paymentResult = await PaymentService.createOrder({
@@ -219,7 +207,7 @@ const Checkout = () => {
         Customers: {
           client_name: formData.clientName,
           mail: formData.email,
-          mobile: formattedPhone, // Send formatted phone number without spaces
+          mobile: formattedPhone, // Send formatted phone number
           country: formData.country || undefined,
           city: formData.city || undefined,
           state: formData.state || undefined,
@@ -379,7 +367,7 @@ const Checkout = () => {
                       name="phone"
                       value={formData.phone}
                       onChange={handleInputChange}
-                      placeholder="+34644982327"
+                      placeholder="+34 644982327"
                       className={errors.phone ? "border-red-500" : ""}
                     />
                     {errors.phone ? (
@@ -388,9 +376,8 @@ const Checkout = () => {
                         {errors.phone}
                       </p>
                     ) : (
-                      <p className="mt-1 text-xs text-gray-500 flex items-center">
-                        <Info className="h-3 w-3 mr-1 flex-shrink-0" />
-                        Must be in international format without spaces (e.g., +34644982327)
+                      <p className="mt-1 text-xs text-gray-500">
+                        Please use international format with country code (e.g., +34 644982327)
                       </p>
                     )}
                   </div>
