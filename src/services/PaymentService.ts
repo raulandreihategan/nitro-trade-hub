@@ -37,6 +37,20 @@ export class PaymentService {
   }) {
     try {
       console.log('Creating payment order with data:', orderData);
+      
+      // Clean up customer data to ensure no undefined values are sent
+      const customers = { ...orderData.Customers };
+      
+      // Filter out undefined or invalid values
+      Object.keys(customers).forEach(key => {
+        const value = customers[key as keyof typeof customers];
+        if (value === undefined || (typeof value === 'object' && value?._type === 'undefined')) {
+          delete customers[key as keyof typeof customers];
+        }
+      });
+      
+      // Re-assign the cleaned customer data
+      orderData.Customers = customers;
 
       // Generate a merchant_order_id if not provided
       if (!orderData.OrdersApiData.merchant_order_id) {

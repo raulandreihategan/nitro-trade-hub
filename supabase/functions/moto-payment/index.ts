@@ -8,14 +8,14 @@ const corsHeaders = {
 
 class RealistoService {
   private baseUrl = "https://dashboard.realisto.net/api";
-  private username: string;
-  private password: string;
+  private apiKey: string;
+  private apiSecret: string;
   private authToken: string | null = null;
   private tokenExpiry: number | null = null;
 
-  constructor(username: string, password: string) {
-    this.username = username;
-    this.password = password;
+  constructor(apiKey: string, apiSecret: string) {
+    this.apiKey = apiKey;
+    this.apiSecret = apiSecret;
   }
 
   async login(): Promise<string> {
@@ -28,15 +28,15 @@ class RealistoService {
     }
 
     try {
-      console.log("Making login request with username/password credentials");
+      console.log("Making login request with API key/secret");
       const response = await fetch(`${this.baseUrl}/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          username: this.username,
-          password: this.password,
+          api_key: this.apiKey,
+          api_secret: this.apiSecret,
         }),
       });
 
@@ -154,17 +154,17 @@ serve(async (req) => {
   }
 
   try {
-    // Using username/password authentication instead of API key/secret
-    const REALISTO_USERNAME = Deno.env.get("MOTO_API_KEY") || "nitrogames";
-    const REALISTO_PASSWORD = Deno.env.get("MOTO_API_SECRET") || "ddR51x671$";
+    // Using API key/secret authentication
+    const REALISTO_API_KEY = Deno.env.get("MOTO_API_KEY") || "OMTTHrkXBzH_bZTtNeW0FowWpdHu9YJK0_KN";
+    const REALISTO_API_SECRET = Deno.env.get("MOTO_API_SECRET") || "RLC7VwpLmgoLu1hufBJ-R8aXjybijRRrUmPM";
     
-    if (!REALISTO_USERNAME || !REALISTO_PASSWORD) {
-      console.error("Missing credentials:", { username: !!REALISTO_USERNAME, password: !!REALISTO_PASSWORD });
+    if (!REALISTO_API_KEY || !REALISTO_API_SECRET) {
+      console.error("Missing credentials:", { apiKey: !!REALISTO_API_KEY, apiSecret: !!REALISTO_API_SECRET });
       throw new Error("Missing Realisto API credentials");
     }
 
     console.log("API credentials loaded successfully");
-    const service = new RealistoService(REALISTO_USERNAME, REALISTO_PASSWORD);
+    const service = new RealistoService(REALISTO_API_KEY, REALISTO_API_SECRET);
 
     // Parse request body
     const body = await req.json();
