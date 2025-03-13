@@ -24,6 +24,7 @@ const Checkout = () => {
     state: '',
     zip: '',
     address: '',
+    taxId: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { toast } = useToast();
@@ -63,10 +64,13 @@ const Checkout = () => {
       case 'email':
         return !/^\S+@\S+\.\S+$/.test(value) ? 'Valid email is required' : '';
       case 'phone':
-        // Allow international format: +XX XXXXXXXXXX or just numbers
-        return value && !/^(\+\d{1,3}\s?)?\d{6,14}$/.test(value.replace(/\s+/g, '')) 
-          ? 'Phone should be in international format (e.g., +34 644982327)' 
+        // Strict validation for international format: must start with + followed by digits
+        return value && !/^\+[0-9]{6,15}$/.test(value.replace(/\s+/g, '')) 
+          ? 'Phone must be in international format starting with + (e.g., +34644982327)' 
           : '';
+      case 'taxId':
+        // Optional field, so just return empty string if not provided
+        return '';
       default:
         return '';
     }
@@ -203,11 +207,17 @@ const Checkout = () => {
           amount: order.total_amount.toString(),
           lang: 2, // English
           merchant_order_description: `Order ${orderId} on Nitrogames`,
+          // Add recurring fields if needed
+          // is_recurring: false,
+          // repeat_count: undefined,
+          // repeat_time: undefined,
+          // repeat_period: undefined,
         },
         Customers: {
           client_name: formData.clientName,
           mail: formData.email,
           mobile: formattedPhone, // Send formatted phone number
+          tax_id: formData.taxId || '',
           country: formData.country || undefined,
           city: formData.city || undefined,
           state: formData.state || undefined,
@@ -218,6 +228,7 @@ const Checkout = () => {
           okUrl: `${window.location.origin}/order-success?id=${orderId}`,
           koUrl: `${window.location.origin}/checkout/failed?id=${orderId}`,
           merchant_order_id: orderId.toString(),
+          incrementId: orderId.toString(),
         },
       });
 
@@ -256,7 +267,7 @@ const Checkout = () => {
         errorMessage = error.message;
         
         // Check for specific API errors
-        if (error.message.includes('phoneNumber')) {
+        if (error.message.includes('mobile')) {
           errorMessage = 'Invalid phone number format. Please use international format (e.g., +34644982327)';
           setErrors(prev => ({ ...prev, phone: errorMessage }));
         }
@@ -358,28 +369,43 @@ const Checkout = () => {
                     </div>
                   </div>
                   
-                  <div>
-                    <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                      Phone Number
-                    </label>
-                    <Input
-                      id="phone"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleInputChange}
-                      placeholder="+34 644982327"
-                      className={errors.phone ? "border-red-500" : ""}
-                    />
-                    {errors.phone ? (
-                      <p className="mt-1 text-sm text-red-600 flex items-center">
-                        <AlertCircle className="h-3 w-3 mr-1" />
-                        {errors.phone}
-                      </p>
-                    ) : (
-                      <p className="mt-1 text-xs text-gray-500">
-                        Please use international format with country code (e.g., +34 644982327)
-                      </p>
-                    )}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                        Phone Number
+                      </label>
+                      <Input
+                        id="phone"
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleInputChange}
+                        placeholder="+34644982327"
+                        className={errors.phone ? "border-red-500" : ""}
+                      />
+                      {errors.phone ? (
+                        <p className="mt-1 text-sm text-red-600 flex items-center">
+                          <AlertCircle className="h-3 w-3 mr-1" />
+                          {errors.phone}
+                        </p>
+                      ) : (
+                        <p className="mt-1 text-xs text-gray-500">
+                          Must start with + followed by country code (e.g., +34644982327)
+                        </p>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="taxId" className="block text-sm font-medium text-gray-700 mb-1">
+                        Tax ID (Optional)
+                      </label>
+                      <Input
+                        id="taxId"
+                        name="taxId"
+                        value={formData.taxId}
+                        onChange={handleInputChange}
+                        placeholder="Tax ID / VAT Number"
+                      />
+                    </div>
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -394,6 +420,7 @@ const Checkout = () => {
                         onChange={handleInputChange}
                         placeholder="Spain"
                       />
+                      <p className="mt-1 text-xs text-gray-500">Example: ESP</p>
                     </div>
                     
                     <div>
@@ -422,6 +449,7 @@ const Checkout = () => {
                         onChange={handleInputChange}
                         placeholder="BCN"
                       />
+                      <p className="mt-1 text-xs text-gray-500">Example: AL</p>
                     </div>
                     
                     <div>
@@ -435,6 +463,7 @@ const Checkout = () => {
                         onChange={handleInputChange}
                         placeholder="08014"
                       />
+                      <p className="mt-1 text-xs text-gray-500">Example: 234</p>
                     </div>
                     
                     <div className="md:col-span-3">
@@ -448,6 +477,7 @@ const Checkout = () => {
                         onChange={handleInputChange}
                         placeholder="Carrer Sant Pere d'Abanto 16"
                       />
+                      <p className="mt-1 text-xs text-gray-500">Example: dsfdsf 345</p>
                     </div>
                   </div>
                   

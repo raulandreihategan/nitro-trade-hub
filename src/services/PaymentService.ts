@@ -15,7 +15,10 @@ export class PaymentService {
       lang: number;
       skip_email?: number;
       send_sms?: boolean;
-      is_recurring?: boolean;
+      repeat_count?: number;
+      is_recurring?: boolean | number;
+      repeat_time?: number;
+      repeat_period?: number;
       is_auth?: boolean;
       merchant_order_description?: string;
     };
@@ -23,6 +26,7 @@ export class PaymentService {
       client_name: string;
       mail: string;
       mobile?: string;
+      tax_id?: string;
       country?: string;
       city?: string;
       state?: string;
@@ -32,6 +36,7 @@ export class PaymentService {
     OrdersApiData: {
       okUrl: string;
       koUrl: string;
+      incrementId?: string;
       merchant_order_id?: string;
     };
   }) {
@@ -64,10 +69,41 @@ export class PaymentService {
         console.log('Generated merchant_order_id:', orderData.OrdersApiData.merchant_order_id);
       }
 
+      // Format the order data to match the API's expected structure
+      const formattedOrderData = {
+        terminal_id: orderData.Orders.terminal_id,
+        amount: orderData.Orders.amount,
+        lang: orderData.Orders.lang,
+        skip_email: orderData.Orders.skip_email,
+        is_recurring: orderData.Orders.is_recurring ? 1 : 0,
+        repeat_count: orderData.Orders.repeat_count,
+        repeat_time: orderData.Orders.repeat_time,
+        repeat_period: orderData.Orders.repeat_period,
+        is_auth: orderData.Orders.is_auth,
+        merchant_order_description: orderData.Orders.merchant_order_description,
+        customer: {
+          client_name: orderData.Customers.client_name,
+          mail: orderData.Customers.mail,
+          mobile: orderData.Customers.mobile,
+          tax_id: orderData.Customers.tax_id || '',
+          country: orderData.Customers.country,
+          city: orderData.Customers.city,
+          state: orderData.Customers.state,
+          zip: orderData.Customers.zip,
+          address: orderData.Customers.address
+        },
+        ordersapidata: {
+          incrementId: orderData.OrdersApiData.incrementId || orderData.OrdersApiData.merchant_order_id,
+          okUrl: orderData.OrdersApiData.okUrl,
+          koUrl: orderData.OrdersApiData.koUrl,
+          merchant_order_id: orderData.OrdersApiData.merchant_order_id
+        }
+      };
+
       const { data, error } = await supabase.functions.invoke('moto-payment', {
         body: {
           action: 'create-order',
-          ...orderData,
+          orderData: formattedOrderData,
         },
       });
 
@@ -78,7 +114,7 @@ export class PaymentService {
         if (typeof error === 'object' && error !== null) {
           // Check for specific error types
           if ('message' in error && typeof error.message === 'string') {
-            if (error.message.includes('phoneNumber')) {
+            if (error.message.includes('mobile')) {
               throw new Error('Invalid phone number format. Please use international format (e.g., +34644982327)');
             }
             if (error.message.includes('API key')) {

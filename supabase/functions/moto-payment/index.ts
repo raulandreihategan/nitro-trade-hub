@@ -99,43 +99,40 @@ class RealistoService {
 
     try {
       // Format the phone number correctly for the API
-      if (orderData.Customers) {
-        // If mobile exists, format it correctly and map to phoneNumber 
-        if (orderData.Customers.mobile) {
-          // Make sure the phone number is in the right format
-          const phoneNumber = orderData.Customers.mobile.replace(/\s+/g, '');
+      if (orderData.customer) {
+        // Make sure the mobile number is properly formatted
+        if (orderData.customer.mobile) {
+          // Remove any spaces from the phone number
+          const phoneNumber = orderData.customer.mobile.replace(/\s+/g, '');
           
-          // If it doesn't start with +, add it
-          orderData.Customers.phoneNumber = phoneNumber.startsWith('+') 
+          // Ensure it starts with a + sign
+          orderData.customer.mobile = phoneNumber.startsWith('+') 
             ? phoneNumber 
             : `+${phoneNumber}`;
             
-          console.log("Mapped mobile to phoneNumber:", orderData.Customers.phoneNumber);
-          
-          // Remove mobile to avoid duplicate fields
-          delete orderData.Customers.mobile;
+          console.log("Formatted mobile number:", orderData.customer.mobile);
         }
       }
 
-      // Ensure that URLs in OrdersApiData are properly formatted with order ID
-      if (orderData.OrdersApiData) {
-        const merchantOrderId = orderData.OrdersApiData.merchant_order_id || `order-${Date.now()}`;
+      // Ensure that URLs in ordersapidata are properly formatted with order ID
+      if (orderData.ordersapidata) {
+        const merchantOrderId = orderData.ordersapidata.merchant_order_id || `order-${Date.now()}`;
         
         // Set a default merchant_order_id if not provided
-        if (!orderData.OrdersApiData.merchant_order_id) {
-          orderData.OrdersApiData.merchant_order_id = merchantOrderId;
+        if (!orderData.ordersapidata.merchant_order_id) {
+          orderData.ordersapidata.merchant_order_id = merchantOrderId;
           console.log("Generated merchant_order_id:", merchantOrderId);
         }
         
-        // Make sure okUrl and koUrl have the order ID parameter
-        if (orderData.OrdersApiData.okUrl && !orderData.OrdersApiData.okUrl.includes('?id=')) {
-          orderData.OrdersApiData.okUrl = `${orderData.OrdersApiData.okUrl}?id=${merchantOrderId}`;
-          console.log("Updated okUrl:", orderData.OrdersApiData.okUrl);
+        // Make sure okUrl and koUrl have the order ID parameter if needed
+        if (orderData.ordersapidata.okUrl && !orderData.ordersapidata.okUrl.includes('?id=')) {
+          orderData.ordersapidata.okUrl = `${orderData.ordersapidata.okUrl}?id=${merchantOrderId}`;
+          console.log("Updated okUrl:", orderData.ordersapidata.okUrl);
         }
         
-        if (orderData.OrdersApiData.koUrl && !orderData.OrdersApiData.koUrl.includes('?id=')) {
-          orderData.OrdersApiData.koUrl = `${orderData.OrdersApiData.koUrl}?id=${merchantOrderId}`;
-          console.log("Updated koUrl:", orderData.OrdersApiData.koUrl);
+        if (orderData.ordersapidata.koUrl && !orderData.ordersapidata.koUrl.includes('?id=')) {
+          orderData.ordersapidata.koUrl = `${orderData.ordersapidata.koUrl}?id=${merchantOrderId}`;
+          console.log("Updated koUrl:", orderData.ordersapidata.koUrl);
         }
       }
 
@@ -226,23 +223,59 @@ serve(async (req) => {
     let result;
     switch (body.action) {
       case "create-order":
-        if (!body.Orders?.amount) {
-          throw new Error("Missing required field: Orders.amount");
-        }
-        
-        if (!body.Customers?.client_name || !body.Customers?.mail) {
-          throw new Error("Missing required customer information");
-        }
-        
-        if (!body.OrdersApiData?.okUrl || !body.OrdersApiData?.koUrl) {
-          throw new Error("Missing required URLs");
-        }
+        // Check if we're using the new format with orderData
+        if (body.orderData) {
+          // Directly use the provided orderData in the new format
+          console.log("Using provided orderData format:", body.orderData);
+          result = await service.createOrder(body.orderData);
+        } else {
+          // If not using the new format, verify required fields
+          if (!body.Orders?.amount) {
+            throw new Error("Missing required field: Orders.amount");
+          }
+          
+          if (!body.Customers?.client_name || !body.Customers?.mail) {
+            throw new Error("Missing required customer information");
+          }
+          
+          if (!body.OrdersApiData?.okUrl || !body.OrdersApiData?.koUrl) {
+            throw new Error("Missing required URLs");
+          }
 
-        result = await service.createOrder({
-          Orders: body.Orders,
-          Customers: body.Customers,
-          OrdersApiData: body.OrdersApiData
-        });
+          // Convert from our format to the API's expected format
+          const apiOrderData = {
+            terminal_id: body.Orders.terminal_id,
+            amount: body.Orders.amount,
+            lang: body.Orders.lang,
+            skip_email: body.Orders.skip_email,
+            is_recurring: body.Orders.is_recurring ? 1 : 0,
+            repeat_count: body.Orders.repeat_count,
+            repeat_time: body.Orders.repeat_time,
+            repeat_period: body.Orders.repeat_period,
+            is_auth: body.Orders.is_auth,
+            merchant_order_description: body.Orders.merchant_order_description,
+            customer: {
+              client_name: body.Customers.client_name,
+              mail: body.Customers.mail,
+              mobile: body.Customers.mobile,
+              tax_id: body.Customers.tax_id || '',
+              country: body.Customers.country,
+              city: body.Customers.city,
+              state: body.Customers.state,
+              zip: body.Customers.zip,
+              address: body.Customers.address
+            },
+            ordersapidata: {
+              incrementId: body.OrdersApiData.incrementId || body.OrdersApiData.merchant_order_id,
+              okUrl: body.OrdersApiData.okUrl,
+              koUrl: body.OrdersApiData.koUrl,
+              merchant_order_id: body.OrdersApiData.merchant_order_id
+            }
+          };
+          
+          console.log("Converted to API format:", apiOrderData);
+          result = await service.createOrder(apiOrderData);
+        }
         break;
 
       case "orders-list":
@@ -272,7 +305,7 @@ serve(async (req) => {
       errorDetails = "Please ensure your API keys are in the correct format.";
     } else if (errorMessage.includes("Login failed")) {
       errorDetails = "Authentication failed. Please check your API credentials.";
-    } else if (errorMessage.includes("phoneNumber")) {
+    } else if (errorMessage.includes("mobile")) {
       errorDetails = "Please provide a valid phone number in international format (+XXXXXXXXXXX).";
     }
     
