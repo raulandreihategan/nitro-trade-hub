@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 /**
@@ -53,8 +52,7 @@ export class PaymentService {
           value === undefined || 
           value === null ||
           (typeof value === 'object' && value !== null && 
-            // Check if '_type' property exists and has value 'undefined'
-            ('_type' in value) && (value as any)._type === 'undefined')
+            '_type' in value && (value as any)._type === 'undefined')
         ) {
           delete customers[key as keyof typeof customers];
         }
@@ -72,30 +70,22 @@ export class PaymentService {
       // Format the order data to match the API's expected structure
       // Based on the PHP example provided, we need to format it like an Orders object
       const formattedOrderData = {
-        terminal_id: orderData.Orders.terminal_id,
-        amount: orderData.Orders.amount,
-        lang: orderData.Orders.lang,
-        skip_email: orderData.Orders.skip_email || 0,
-        is_recurring: typeof orderData.Orders.is_recurring === 'boolean' 
-          ? (orderData.Orders.is_recurring ? 1 : 0) 
-          : (orderData.Orders.is_recurring || 0),
-        repeat_count: orderData.Orders.repeat_count,
-        repeat_time: orderData.Orders.repeat_time,
-        repeat_period: orderData.Orders.repeat_period,
-        is_auth: orderData.Orders.is_auth ? 1 : 0,
-        merchant_order_description: orderData.Orders.merchant_order_description,
-        customer: {
-          client_name: orderData.Customers.client_name,
-          mail: orderData.Customers.mail,
-          mobile: orderData.Customers.mobile,
-          tax_id: orderData.Customers.tax_id || '',
-          country: orderData.Customers.country,
-          city: orderData.Customers.city,
-          state: orderData.Customers.state,
-          zip: orderData.Customers.zip,
-          address: orderData.Customers.address
+        Orders: {
+          terminal_id: orderData.Orders.terminal_id,
+          amount: orderData.Orders.amount,
+          lang: orderData.Orders.lang,
+          skip_email: orderData.Orders.skip_email || 0,
+          is_recurring: typeof orderData.Orders.is_recurring === 'boolean' 
+            ? (orderData.Orders.is_recurring ? 1 : 0) 
+            : (orderData.Orders.is_recurring || 0),
+          repeat_count: orderData.Orders.repeat_count,
+          repeat_time: orderData.Orders.repeat_time,
+          repeat_period: orderData.Orders.repeat_period,
+          is_auth: orderData.Orders.is_auth ? 1 : 0,
+          merchant_order_description: orderData.Orders.merchant_order_description,
         },
-        ordersapidata: {
+        Customers: orderData.Customers,
+        OrdersApiData: {
           incrementId: orderData.OrdersApiData.incrementId || orderData.OrdersApiData.merchant_order_id,
           okUrl: orderData.OrdersApiData.okUrl,
           koUrl: orderData.OrdersApiData.koUrl,
