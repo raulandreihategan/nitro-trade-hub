@@ -70,16 +70,19 @@ export class PaymentService {
       }
 
       // Format the order data to match the API's expected structure
+      // Based on the PHP example provided, we need to format it like an Orders object
       const formattedOrderData = {
         terminal_id: orderData.Orders.terminal_id,
         amount: orderData.Orders.amount,
         lang: orderData.Orders.lang,
-        skip_email: orderData.Orders.skip_email,
-        is_recurring: orderData.Orders.is_recurring ? 1 : 0,
+        skip_email: orderData.Orders.skip_email || 0,
+        is_recurring: typeof orderData.Orders.is_recurring === 'boolean' 
+          ? (orderData.Orders.is_recurring ? 1 : 0) 
+          : (orderData.Orders.is_recurring || 0),
         repeat_count: orderData.Orders.repeat_count,
         repeat_time: orderData.Orders.repeat_time,
         repeat_period: orderData.Orders.repeat_period,
-        is_auth: orderData.Orders.is_auth,
+        is_auth: orderData.Orders.is_auth ? 1 : 0,
         merchant_order_description: orderData.Orders.merchant_order_description,
         customer: {
           client_name: orderData.Customers.client_name,
@@ -99,6 +102,8 @@ export class PaymentService {
           merchant_order_id: orderData.OrdersApiData.merchant_order_id
         }
       };
+
+      console.log('Sending formatted order data to API:', JSON.stringify(formattedOrderData, null, 2));
 
       const { data, error } = await supabase.functions.invoke('moto-payment', {
         body: {
@@ -135,6 +140,9 @@ export class PaymentService {
       let paymentUrl = null;
       
       if (data) {
+        // Log the full response for debugging
+        console.log('Full API response:', JSON.stringify(data, null, 2));
+        
         // Try accessing the URL from various possible response structures
         if (data.pay_url) {
           paymentUrl = data.pay_url;

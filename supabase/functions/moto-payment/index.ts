@@ -93,50 +93,64 @@ class RealistoService {
   }
 
   async createOrder(orderData: any): Promise<any> {
-    const token = await this.login();
-    
-    console.log("Creating order with data:", JSON.stringify(orderData, null, 2));
-
     try {
-      // Format the phone number correctly for the API
-      if (orderData.customer) {
-        // Make sure the mobile number is properly formatted
-        if (orderData.customer.mobile) {
-          // Remove any spaces from the phone number
-          const phoneNumber = orderData.customer.mobile.replace(/\s+/g, '');
+      const token = await this.login();
+      
+      console.log("Creating order with data:", JSON.stringify(orderData, null, 2));
+
+      // Format the request body to match exactly what the API expects
+      // Based on the PHP example, the API expects properties directly on the object
+      const apiPayload = {
+        terminal_id: orderData.terminal_id,
+        amount: orderData.amount,
+        lang: orderData.lang,
+        skip_email: orderData.skip_email || 0,
+        is_recurring: orderData.is_recurring || 0,
+        repeat_count: orderData.repeat_count,
+        repeat_time: orderData.repeat_time,
+        repeat_period: orderData.repeat_period,
+        is_auth: orderData.is_auth || 0,
+        merchant_order_description: orderData.merchant_order_description,
+        customer: orderData.customer,
+        ordersapidata: orderData.ordersapidata
+      };
+
+      // Make sure the mobile number is properly formatted in the customer object
+      if (apiPayload.customer && apiPayload.customer.mobile) {
+        // Remove any spaces from the phone number
+        const phoneNumber = apiPayload.customer.mobile.replace(/\s+/g, '');
+        
+        // Ensure it starts with a + sign
+        apiPayload.customer.mobile = phoneNumber.startsWith('+') 
+          ? phoneNumber 
+          : `+${phoneNumber}`;
           
-          // Ensure it starts with a + sign
-          orderData.customer.mobile = phoneNumber.startsWith('+') 
-            ? phoneNumber 
-            : `+${phoneNumber}`;
-            
-          console.log("Formatted mobile number:", orderData.customer.mobile);
-        }
+        console.log("Formatted mobile number:", apiPayload.customer.mobile);
       }
 
-      // Ensure that URLs in ordersapidata are properly formatted with order ID
-      if (orderData.ordersapidata) {
-        const merchantOrderId = orderData.ordersapidata.merchant_order_id || `order-${Date.now()}`;
+      // Ensure URLs in ordersapidata are properly formatted
+      if (apiPayload.ordersapidata) {
+        const merchantOrderId = apiPayload.ordersapidata.merchant_order_id || `order-${Date.now()}`;
         
         // Set a default merchant_order_id if not provided
-        if (!orderData.ordersapidata.merchant_order_id) {
-          orderData.ordersapidata.merchant_order_id = merchantOrderId;
+        if (!apiPayload.ordersapidata.merchant_order_id) {
+          apiPayload.ordersapidata.merchant_order_id = merchantOrderId;
           console.log("Generated merchant_order_id:", merchantOrderId);
         }
         
         // Make sure okUrl and koUrl have the order ID parameter if needed
-        if (orderData.ordersapidata.okUrl && !orderData.ordersapidata.okUrl.includes('?id=')) {
-          orderData.ordersapidata.okUrl = `${orderData.ordersapidata.okUrl}?id=${merchantOrderId}`;
-          console.log("Updated okUrl:", orderData.ordersapidata.okUrl);
+        if (apiPayload.ordersapidata.okUrl && !apiPayload.ordersapidata.okUrl.includes('?id=')) {
+          apiPayload.ordersapidata.okUrl = `${apiPayload.ordersapidata.okUrl}?id=${merchantOrderId}`;
+          console.log("Updated okUrl:", apiPayload.ordersapidata.okUrl);
         }
         
-        if (orderData.ordersapidata.koUrl && !orderData.ordersapidata.koUrl.includes('?id=')) {
-          orderData.ordersapidata.koUrl = `${orderData.ordersapidata.koUrl}?id=${merchantOrderId}`;
-          console.log("Updated koUrl:", orderData.ordersapidata.koUrl);
+        if (apiPayload.ordersapidata.koUrl && !apiPayload.ordersapidata.koUrl.includes('?id=')) {
+          apiPayload.ordersapidata.koUrl = `${apiPayload.ordersapidata.koUrl}?id=${merchantOrderId}`;
+          console.log("Updated koUrl:", apiPayload.ordersapidata.koUrl);
         }
       }
 
-      console.log("Making request to API with prepared data:", JSON.stringify(orderData, null, 2));
+      console.log("Making request to API with prepared data:", JSON.stringify(apiPayload, null, 2));
 
       const response = await fetch(`${this.baseUrl}/orders/create`, {
         method: "POST",
@@ -144,7 +158,7 @@ class RealistoService {
           "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(orderData),
+        body: JSON.stringify(apiPayload),
       });
 
       console.log("Create order response status:", response.status);
@@ -226,10 +240,10 @@ serve(async (req) => {
         // Check if we're using the new format with orderData
         if (body.orderData) {
           // Directly use the provided orderData in the new format
-          console.log("Using provided orderData format:", body.orderData);
+          console.log("Using provided orderData format:", JSON.stringify(body.orderData, null, 2));
           result = await service.createOrder(body.orderData);
         } else {
-          // If not using the new format, verify required fields
+          // This structure is now deprecated but kept for backward compatibility
           if (!body.Orders?.amount) {
             throw new Error("Missing required field: Orders.amount");
           }
@@ -273,7 +287,7 @@ serve(async (req) => {
             }
           };
           
-          console.log("Converted to API format:", apiOrderData);
+          console.log("Converted to API format:", JSON.stringify(apiOrderData, null, 2));
           result = await service.createOrder(apiOrderData);
         }
         break;
@@ -286,6 +300,22 @@ serve(async (req) => {
 
       default:
         throw new Error("Invalid action");
+    }
+
+    // Ensure result contains a pay_url if it's a create-order action
+    if (body.action === "create-order" && result) {
+      // Add additional logging of the final result
+      console.log("Final result to return to client:", JSON.stringify(result, null, 2));
+      
+      // Make sure the result has a properly formatted pay_url
+      if (!result.pay_url && typeof result === 'string' && result.includes('http')) {
+        result = { pay_url: result.trim() };
+      }
+      
+      // If we have a URL in the wrong location, move it to the correct spot
+      if (!result.pay_url && result.body && result.body.pay_url) {
+        result.pay_url = result.body.pay_url;
+      }
     }
 
     return new Response(JSON.stringify(result), {
@@ -307,6 +337,9 @@ serve(async (req) => {
       errorDetails = "Authentication failed. Please check your API credentials.";
     } else if (errorMessage.includes("mobile")) {
       errorDetails = "Please provide a valid phone number in international format (+XXXXXXXXXXX).";
+    } else if (errorMessage.includes("Undefined index")) {
+      errorMessage = "API request format error: " + errorMessage;
+      errorDetails = "The request structure doesn't match what the API expects. Please check the format.";
     }
     
     return new Response(JSON.stringify({
