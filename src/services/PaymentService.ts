@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 /**
@@ -67,25 +68,27 @@ export class PaymentService {
         console.log('Generated merchant_order_id:', orderData.OrdersApiData.merchant_order_id);
       }
 
-      // Format the order data to match the API's expected structure
-      // Based on the PHP example provided, we need to format it like an Orders object
-      const formattedOrderData = {
-        Orders: {
-          terminal_id: orderData.Orders.terminal_id,
-          amount: orderData.Orders.amount,
-          lang: orderData.Orders.lang,
-          skip_email: orderData.Orders.skip_email || 0,
-          is_recurring: typeof orderData.Orders.is_recurring === 'boolean' 
-            ? (orderData.Orders.is_recurring ? 1 : 0) 
-            : (orderData.Orders.is_recurring || 0),
-          repeat_count: orderData.Orders.repeat_count,
-          repeat_time: orderData.Orders.repeat_time,
-          repeat_period: orderData.Orders.repeat_period,
-          is_auth: orderData.Orders.is_auth ? 1 : 0,
-          merchant_order_description: orderData.Orders.merchant_order_description,
-        },
-        Customers: orderData.Customers,
-        OrdersApiData: {
+      // Important: Format the data to match exactly what the PHP code is doing
+      // This is the key issue - we need to match the exact structure expected by the API
+      const apiPayload = {
+        action: 'create-order',
+        // Move orders, customer, and api data to top level like the PHP example
+        terminal_id: orderData.Orders.terminal_id,
+        amount: orderData.Orders.amount,
+        lang: orderData.Orders.lang,
+        skip_email: orderData.Orders.skip_email || 0,
+        is_recurring: typeof orderData.Orders.is_recurring === 'boolean' 
+          ? (orderData.Orders.is_recurring ? 1 : 0) 
+          : (orderData.Orders.is_recurring || 0),
+        repeat_count: orderData.Orders.repeat_count,
+        repeat_time: orderData.Orders.repeat_time,
+        repeat_period: orderData.Orders.repeat_period,
+        is_auth: orderData.Orders.is_auth ? 1 : 0,
+        merchant_order_description: orderData.Orders.merchant_order_description,
+        // Customer details
+        customer: orderData.Customers,
+        // API data
+        ordersapidata: {
           incrementId: orderData.OrdersApiData.incrementId || orderData.OrdersApiData.merchant_order_id,
           okUrl: orderData.OrdersApiData.okUrl,
           koUrl: orderData.OrdersApiData.koUrl,
@@ -93,13 +96,10 @@ export class PaymentService {
         }
       };
 
-      console.log('Sending formatted order data to API:', JSON.stringify(formattedOrderData, null, 2));
+      console.log('Sending formatted order data to API:', JSON.stringify(apiPayload, null, 2));
 
       const { data, error } = await supabase.functions.invoke('moto-payment', {
-        body: {
-          action: 'create-order',
-          orderData: formattedOrderData,
-        },
+        body: apiPayload,
       });
 
       if (error) {

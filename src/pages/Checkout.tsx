@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Header from '@/components/layout/Header';
@@ -32,13 +31,11 @@ const Checkout = () => {
   const location = useLocation();
   const stateParams = location.state as { bypassEmptyCartCheck?: boolean, orderId?: string } | null;
 
-  // Check if user is signed in
   useEffect(() => {
     const getCurrentUser = async () => {
       const { data } = await supabase.auth.getSession();
       setUser(data.session?.user || null);
       
-      // If user exists, prefill email
       if (data.session?.user?.email) {
         setFormData(prev => ({
           ...prev,
@@ -50,7 +47,6 @@ const Checkout = () => {
     getCurrentUser();
   }, []);
 
-  // Redirect to login if not authenticated
   useEffect(() => {
     if (items.length === 0 && !(stateParams?.bypassEmptyCartCheck)) {
       navigate('/cart');
@@ -64,12 +60,10 @@ const Checkout = () => {
       case 'email':
         return !/^\S+@\S+\.\S+$/.test(value) ? 'Valid email is required' : '';
       case 'phone':
-        // Strict validation for international format: must start with + followed by digits
         return value && !/^\+[0-9]{6,15}$/.test(value.replace(/\s+/g, '')) 
           ? 'Phone must be in international format starting with + (e.g., +34644982327)' 
           : '';
       case 'taxId':
-        // Optional field, so just return empty string if not provided
         return '';
       default:
         return '';
@@ -79,10 +73,8 @@ const Checkout = () => {
   const formatPhoneNumber = (phone: string): string => {
     if (!phone) return '';
     
-    // Remove all non-digit characters except the + sign at the beginning
     let cleaned = phone.replace(/[^\d+]/g, '');
     
-    // Ensure it starts with + if it doesn't already
     if (!cleaned.startsWith('+')) {
       cleaned = '+' + cleaned;
     }
@@ -97,7 +89,6 @@ const Checkout = () => {
       [name]: value
     }));
     
-    // Validate the field
     const error = validateField(name, value);
     setErrors(prev => ({
       ...prev,
@@ -109,7 +100,6 @@ const Checkout = () => {
     const newErrors: Record<string, string> = {};
     let isValid = true;
     
-    // Validate required fields
     Object.entries(formData).forEach(([key, value]) => {
       if (key === 'clientName' || key === 'email') {
         const error = validateField(key, value.toString());
@@ -119,7 +109,6 @@ const Checkout = () => {
         }
       }
       
-      // Validate phone if provided
       if (key === 'phone' && value) {
         const error = validateField(key, value.toString());
         if (error) {
@@ -136,7 +125,6 @@ const Checkout = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate form
     if (!validateForm()) {
       toast({
         title: 'Validation Error',
@@ -152,9 +140,7 @@ const Checkout = () => {
       let orderId = stateParams?.orderId;
       let order;
 
-      // If we don't have an orderId from state, create a new order
       if (!orderId) {
-        // First save the order to our database
         const { data: newOrder, error: orderError } = await supabase
           .from('orders')
           .insert({
@@ -170,7 +156,6 @@ const Checkout = () => {
         order = newOrder;
         orderId = newOrder.id;
         
-        // Add order items
         const orderItems = items.map(item => ({
           order_id: orderId,
           service_id: item.service_id,
@@ -186,7 +171,6 @@ const Checkout = () => {
         
         if (itemsError) throw itemsError;
       } else {
-        // Get the existing order data
         const { data: existingOrder, error: getOrderError } = await supabase
           .from('orders')
           .select('*')
@@ -197,27 +181,20 @@ const Checkout = () => {
         order = existingOrder;
       }
 
-      // Format phone number for the API
       const formattedPhone = formData.phone ? formatPhoneNumber(formData.phone) : undefined;
 
-      // Create payment URL with MOTO API
       const paymentResult = await PaymentService.createOrder({
         Orders: {
-          terminal_id: 1, // Default terminal ID
+          terminal_id: 1,
           amount: order.total_amount.toString(),
-          lang: 2, // English
+          lang: 2,
           merchant_order_description: `Order ${orderId} on Nitrogames`,
-          // Add recurring fields if needed
-          // is_recurring: false,
-          // repeat_count: undefined,
-          // repeat_time: undefined,
-          // repeat_period: undefined,
         },
         Customers: {
           client_name: formData.clientName,
           mail: formData.email,
-          mobile: formattedPhone, // Send formatted phone number
-          tax_id: formData.taxId || '',
+          mobile: formattedPhone,
+          tax_id: formData.taxId || undefined,
           country: formData.country || undefined,
           city: formData.city || undefined,
           state: formData.state || undefined,
@@ -234,7 +211,6 @@ const Checkout = () => {
 
       console.log('Payment result:', paymentResult);
 
-      // Update our order with the payment intent
       if (paymentResult && paymentResult.body && paymentResult.body.order) {
         await supabase
           .from('orders')
@@ -244,14 +220,11 @@ const Checkout = () => {
           .eq('id', orderId);
       }
 
-      // Clear the cart
       await clearCart();
       
-      // Redirect to payment URL if provided
       if (paymentResult && paymentResult.body && paymentResult.body.pay_url) {
         window.location.href = paymentResult.body.pay_url;
       } else {
-        // Redirect to success page if no payment URL is provided
         navigate('/order-success', { state: { orderId } });
         toast({
           title: 'Order created',
@@ -261,19 +234,16 @@ const Checkout = () => {
     } catch (error: any) {
       console.error('Error during checkout:', error);
       
-      // Try to get more detailed error message
       let errorMessage = 'There was an error processing your payment';
       if (error.message) {
         errorMessage = error.message;
         
-        // Check for specific API errors
         if (error.message.includes('mobile')) {
           errorMessage = 'Invalid phone number format. Please use international format (e.g., +34644982327)';
           setErrors(prev => ({ ...prev, phone: errorMessage }));
         }
       }
       
-      // Try to encode error object in the URL
       let errorUrl = `/checkout/failed?id=${stateParams?.orderId || ''}`;
       
       try {
@@ -318,7 +288,6 @@ const Checkout = () => {
           </div>
           
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Checkout Form */}
             <div className="lg:col-span-2">
               <div className="bg-white rounded-xl shadow-glossy p-6">
                 <h2 className="text-xl font-semibold text-gray-900 mb-4">Billing Details</h2>
@@ -504,7 +473,6 @@ const Checkout = () => {
               </div>
             </div>
             
-            {/* Order Summary */}
             <div className="lg:col-span-1">
               <div className="bg-white rounded-xl shadow-glossy p-6 sticky top-24">
                 <h2 className="text-xl font-semibold text-gray-900 mb-4">Order Summary</h2>

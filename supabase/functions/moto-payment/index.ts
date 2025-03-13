@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -89,60 +90,55 @@ class RealistoService {
     try {
       const token = await this.login();
       
-      console.log("Creating order with data:", JSON.stringify(orderData, null, 2));
+      // Log the original data we received from the client
+      console.log("Creating order with original data:", JSON.stringify(orderData, null, 2));
 
-      if (!orderData.Orders) {
-        throw new Error("Missing required field: Orders");
-      }
-      
-      if (!orderData.Customers) {
-        throw new Error("Missing required field: Customers");
-      }
-      
-      if (!orderData.OrdersApiData) {
-        throw new Error("Missing required field: OrdersApiData");
-      }
-
-      const apiPayload = {
-        terminal_id: orderData.Orders.terminal_id,
-        amount: orderData.Orders.amount,
-        lang: orderData.Orders.lang,
-        skip_email: orderData.Orders.skip_email || 0,
-        is_recurring: orderData.Orders.is_recurring || 0,
-        repeat_count: orderData.Orders.repeat_count,
-        repeat_time: orderData.Orders.repeat_time,
-        repeat_period: orderData.Orders.repeat_period,
-        is_auth: orderData.Orders.is_auth || 0,
-        merchant_order_description: orderData.Orders.merchant_order_description,
-        customer: orderData.Customers,
-        ordersapidata: orderData.OrdersApiData
+      // Create a proper Orders object exactly like in the PHP example
+      // This is key to fixing the "Undefined index: Orders" error
+      const apiPayload: any = {
+        Orders: {
+          terminal_id: orderData.terminal_id,
+          amount: orderData.amount,
+          lang: orderData.lang,
+          skip_email: orderData.skip_email || 0,
+          is_recurring: orderData.is_recurring || 0,
+          repeat_count: orderData.repeat_count,
+          repeat_time: orderData.repeat_time,
+          repeat_period: orderData.repeat_period,
+          is_auth: orderData.is_auth || 0,
+          merchant_order_description: orderData.merchant_order_description,
+        },
+        Customers: orderData.customer,
+        OrdersApiData: orderData.ordersapidata
       };
 
-      if (apiPayload.customer && apiPayload.customer.mobile) {
-        const phoneNumber = apiPayload.customer.mobile.replace(/\s+/g, '');
-        apiPayload.customer.mobile = phoneNumber.startsWith('+') 
+      // Format mobile phone number if present
+      if (apiPayload.Customers && apiPayload.Customers.mobile) {
+        const phoneNumber = apiPayload.Customers.mobile.replace(/\s+/g, '');
+        apiPayload.Customers.mobile = phoneNumber.startsWith('+') 
           ? phoneNumber 
           : `+${phoneNumber}`;
           
-        console.log("Formatted mobile number:", apiPayload.customer.mobile);
+        console.log("Formatted mobile number:", apiPayload.Customers.mobile);
       }
 
-      if (apiPayload.ordersapidata) {
-        const merchantOrderId = apiPayload.ordersapidata.merchant_order_id || `order-${Date.now()}`;
+      // Ensure merchant_order_id is set and URLs include the ID
+      if (apiPayload.OrdersApiData) {
+        const merchantOrderId = apiPayload.OrdersApiData.merchant_order_id || `order-${Date.now()}`;
         
-        if (!apiPayload.ordersapidata.merchant_order_id) {
-          apiPayload.ordersapidata.merchant_order_id = merchantOrderId;
+        if (!apiPayload.OrdersApiData.merchant_order_id) {
+          apiPayload.OrdersApiData.merchant_order_id = merchantOrderId;
           console.log("Generated merchant_order_id:", merchantOrderId);
         }
         
-        if (apiPayload.ordersapidata.okUrl && !apiPayload.ordersapidata.okUrl.includes('?id=')) {
-          apiPayload.ordersapidata.okUrl = `${apiPayload.ordersapidata.okUrl}?id=${merchantOrderId}`;
-          console.log("Updated okUrl:", apiPayload.ordersapidata.okUrl);
+        if (apiPayload.OrdersApiData.okUrl && !apiPayload.OrdersApiData.okUrl.includes('?id=')) {
+          apiPayload.OrdersApiData.okUrl = `${apiPayload.OrdersApiData.okUrl}?id=${merchantOrderId}`;
+          console.log("Updated okUrl:", apiPayload.OrdersApiData.okUrl);
         }
         
-        if (apiPayload.ordersapidata.koUrl && !apiPayload.ordersapidata.koUrl.includes('?id=')) {
-          apiPayload.ordersapidata.koUrl = `${apiPayload.ordersapidata.koUrl}?id=${merchantOrderId}`;
-          console.log("Updated koUrl:", apiPayload.ordersapidata.koUrl);
+        if (apiPayload.OrdersApiData.koUrl && !apiPayload.OrdersApiData.koUrl.includes('?id=')) {
+          apiPayload.OrdersApiData.koUrl = `${apiPayload.OrdersApiData.koUrl}?id=${merchantOrderId}`;
+          console.log("Updated koUrl:", apiPayload.OrdersApiData.koUrl);
         }
       }
 
@@ -220,51 +216,39 @@ serve(async (req) => {
     const body = await req.json();
     console.log("Received request:", JSON.stringify(body, null, 2));
 
-    if (!body.action) {
-      throw new Error("Missing action parameter");
-    }
-
     let result;
-    switch (body.action) {
-      case "create-order":
-        if (body.orderData) {
-          console.log("Using provided orderData format:", JSON.stringify(body.orderData, null, 2));
-          result = await service.createOrder(body.orderData);
-        } else {
-          if (!body.Orders?.amount) {
-            throw new Error("Missing required field: Orders.amount");
-          }
-          
-          if (!body.Customers?.client_name || !body.Customers?.mail) {
-            throw new Error("Missing required customer information");
-          }
-          
-          if (!body.OrdersApiData?.okUrl || !body.OrdersApiData?.koUrl) {
-            throw new Error("Missing required URLs");
-          }
-
-          const apiOrderData = {
-            Orders: body.Orders,
-            Customers: body.Customers,
-            OrdersApiData: body.OrdersApiData
-          };
-          
-          console.log("Converted to API format:", JSON.stringify(apiOrderData, null, 2));
-          result = await service.createOrder(apiOrderData);
-        }
-        break;
-
-      case "orders-list":
-      case "get-terminals":
-      case "cancel-order":
-      case "refund-order":
-        throw new Error(`${body.action} not implemented yet`);
-
-      default:
-        throw new Error("Invalid action");
+    
+    // Handle direct order creation (when terminal_id, amount, etc. are top-level)
+    if (body.terminal_id && body.amount && body.customer) {
+      console.log("Using direct order format");
+      result = await service.createOrder(body);
     }
-
-    if (body.action === "create-order" && result) {
+    // Handle create-order action with orderData
+    else if (body.action === "create-order") {
+      console.log("Using action-based order format");
+      if (body.orderData) {
+        result = await service.createOrder(body.orderData);
+      } else {
+        throw new Error("Missing orderData in create-order request");
+      }
+    }
+    // Handle other actions like orders-list, etc.
+    else if (body.action) {
+      if (body.action === "orders-list" || 
+          body.action === "get-terminals" || 
+          body.action === "cancel-order" || 
+          body.action === "refund-order") {
+        throw new Error(`${body.action} not implemented yet`);
+      } else {
+        throw new Error("Invalid action");
+      }
+    }
+    // Handle any other case as an error
+    else {
+      throw new Error("Invalid request format. Missing required fields.");
+    }
+    
+    if (result) {
       console.log("Final result to return to client:", JSON.stringify(result, null, 2));
       
       if (!result.pay_url && typeof result === 'string' && result.includes('http')) {
