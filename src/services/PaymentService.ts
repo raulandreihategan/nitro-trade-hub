@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 /**
@@ -68,27 +67,26 @@ export class PaymentService {
         console.log('Generated merchant_order_id:', orderData.OrdersApiData.merchant_order_id);
       }
 
-      // Important: Format the data to match exactly what the PHP code is doing
-      // This is the key issue - we need to match the exact structure expected by the API
+      // Prepare the order data exactly as expected by the API
+      // This follows the PHP example structure precisely
       const apiPayload = {
         action: 'create-order',
-        // Move orders, customer, and api data to top level like the PHP example
-        terminal_id: orderData.Orders.terminal_id,
-        amount: orderData.Orders.amount,
-        lang: orderData.Orders.lang,
-        skip_email: orderData.Orders.skip_email || 0,
-        is_recurring: typeof orderData.Orders.is_recurring === 'boolean' 
-          ? (orderData.Orders.is_recurring ? 1 : 0) 
-          : (orderData.Orders.is_recurring || 0),
-        repeat_count: orderData.Orders.repeat_count,
-        repeat_time: orderData.Orders.repeat_time,
-        repeat_period: orderData.Orders.repeat_period,
-        is_auth: orderData.Orders.is_auth ? 1 : 0,
-        merchant_order_description: orderData.Orders.merchant_order_description,
-        // Customer details
-        customer: orderData.Customers,
-        // API data
-        ordersapidata: {
+        Orders: {
+          terminal_id: orderData.Orders.terminal_id,
+          amount: orderData.Orders.amount,
+          lang: orderData.Orders.lang,
+          skip_email: orderData.Orders.skip_email || 0,
+          is_recurring: typeof orderData.Orders.is_recurring === 'boolean' 
+            ? (orderData.Orders.is_recurring ? 1 : 0) 
+            : (orderData.Orders.is_recurring || 0),
+          repeat_count: orderData.Orders.repeat_count,
+          repeat_time: orderData.Orders.repeat_time,
+          repeat_period: orderData.Orders.repeat_period,
+          is_auth: orderData.Orders.is_auth ? 1 : 0,
+          merchant_order_description: orderData.Orders.merchant_order_description,
+        },
+        Customers: orderData.Customers,
+        OrdersApiData: {
           incrementId: orderData.OrdersApiData.incrementId || orderData.OrdersApiData.merchant_order_id,
           okUrl: orderData.OrdersApiData.okUrl,
           koUrl: orderData.OrdersApiData.koUrl,

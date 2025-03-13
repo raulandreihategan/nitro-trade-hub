@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Header from '@/components/layout/Header';
@@ -183,6 +184,7 @@ const Checkout = () => {
 
       const formattedPhone = formData.phone ? formatPhoneNumber(formData.phone) : undefined;
 
+      // Use the exact structure the API expects
       const paymentResult = await PaymentService.createOrder({
         Orders: {
           terminal_id: 1,

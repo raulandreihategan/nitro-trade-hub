@@ -93,56 +93,51 @@ class RealistoService {
       // Log the original data we received from the client
       console.log("Creating order with original data:", JSON.stringify(orderData, null, 2));
 
-      // Create a proper Orders object exactly like in the PHP example
-      // This is key to fixing the "Undefined index: Orders" error
-      const apiPayload: any = {
-        Orders: {
-          terminal_id: orderData.terminal_id,
-          amount: orderData.amount,
-          lang: orderData.lang,
-          skip_email: orderData.skip_email || 0,
-          is_recurring: orderData.is_recurring || 0,
-          repeat_count: orderData.repeat_count,
-          repeat_time: orderData.repeat_time,
-          repeat_period: orderData.repeat_period,
-          is_auth: orderData.is_auth || 0,
-          merchant_order_description: orderData.merchant_order_description,
-        },
-        Customers: orderData.customer,
-        OrdersApiData: orderData.ordersapidata
-      };
+      // Ensure we have the exact structure expected by the PHP code
+      // The PHP example shows:
+      // $full_order = array (
+      //   'Orders' => $order_array,
+      //   'Customers' => $this->customer,
+      //   'OrdersApiData' => $this->ordersapidata,
+      // );
+      
+      // Check if we already have the expected structure
+      if (!orderData.Orders || !orderData.Customers || !orderData.OrdersApiData) {
+        console.error("Invalid order data structure. Missing required objects:", orderData);
+        throw new Error("Invalid order data structure. The API requires 'Orders', 'Customers', and 'OrdersApiData' objects.");
+      }
 
       // Format mobile phone number if present
-      if (apiPayload.Customers && apiPayload.Customers.mobile) {
-        const phoneNumber = apiPayload.Customers.mobile.replace(/\s+/g, '');
-        apiPayload.Customers.mobile = phoneNumber.startsWith('+') 
+      if (orderData.Customers && orderData.Customers.mobile) {
+        const phoneNumber = orderData.Customers.mobile.replace(/\s+/g, '');
+        orderData.Customers.mobile = phoneNumber.startsWith('+') 
           ? phoneNumber 
           : `+${phoneNumber}`;
           
-        console.log("Formatted mobile number:", apiPayload.Customers.mobile);
+        console.log("Formatted mobile number:", orderData.Customers.mobile);
       }
 
       // Ensure merchant_order_id is set and URLs include the ID
-      if (apiPayload.OrdersApiData) {
-        const merchantOrderId = apiPayload.OrdersApiData.merchant_order_id || `order-${Date.now()}`;
+      if (orderData.OrdersApiData) {
+        const merchantOrderId = orderData.OrdersApiData.merchant_order_id || `order-${Date.now()}`;
         
-        if (!apiPayload.OrdersApiData.merchant_order_id) {
-          apiPayload.OrdersApiData.merchant_order_id = merchantOrderId;
+        if (!orderData.OrdersApiData.merchant_order_id) {
+          orderData.OrdersApiData.merchant_order_id = merchantOrderId;
           console.log("Generated merchant_order_id:", merchantOrderId);
         }
         
-        if (apiPayload.OrdersApiData.okUrl && !apiPayload.OrdersApiData.okUrl.includes('?id=')) {
-          apiPayload.OrdersApiData.okUrl = `${apiPayload.OrdersApiData.okUrl}?id=${merchantOrderId}`;
-          console.log("Updated okUrl:", apiPayload.OrdersApiData.okUrl);
+        if (orderData.OrdersApiData.okUrl && !orderData.OrdersApiData.okUrl.includes('?id=')) {
+          orderData.OrdersApiData.okUrl = `${orderData.OrdersApiData.okUrl}?id=${merchantOrderId}`;
+          console.log("Updated okUrl:", orderData.OrdersApiData.okUrl);
         }
         
-        if (apiPayload.OrdersApiData.koUrl && !apiPayload.OrdersApiData.koUrl.includes('?id=')) {
-          apiPayload.OrdersApiData.koUrl = `${apiPayload.OrdersApiData.koUrl}?id=${merchantOrderId}`;
-          console.log("Updated koUrl:", apiPayload.OrdersApiData.koUrl);
+        if (orderData.OrdersApiData.koUrl && !orderData.OrdersApiData.koUrl.includes('?id=')) {
+          orderData.OrdersApiData.koUrl = `${orderData.OrdersApiData.koUrl}?id=${merchantOrderId}`;
+          console.log("Updated koUrl:", orderData.OrdersApiData.koUrl);
         }
       }
 
-      console.log("Making request to API with prepared data:", JSON.stringify(apiPayload, null, 2));
+      console.log("Making request to API with prepared data:", JSON.stringify(orderData, null, 2));
 
       const response = await fetch(`${this.baseUrl}/orders/create`, {
         method: "POST",
@@ -150,7 +145,7 @@ class RealistoService {
           "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(apiPayload),
+        body: JSON.stringify(orderData),
       });
 
       console.log("Create order response status:", response.status);
@@ -218,19 +213,28 @@ serve(async (req) => {
 
     let result;
     
-    // Handle direct order creation (when terminal_id, amount, etc. are top-level)
-    if (body.terminal_id && body.amount && body.customer) {
-      console.log("Using direct order format");
-      result = await service.createOrder(body);
-    }
-    // Handle create-order action with orderData
-    else if (body.action === "create-order") {
-      console.log("Using action-based order format");
-      if (body.orderData) {
-        result = await service.createOrder(body.orderData);
-      } else {
-        throw new Error("Missing orderData in create-order request");
+    // Handle order creation with proper structure
+    if (body.action === "create-order") {
+      console.log("Processing create-order action");
+      
+      // Verify we have the proper structure we need
+      if (!body.Orders) {
+        console.error("Missing Orders object in request");
+        throw new Error("Missing Orders object in create-order request");
       }
+      
+      if (!body.Customers) {
+        console.error("Missing Customers object in request");
+        throw new Error("Missing Customers object in create-order request");
+      }
+      
+      if (!body.OrdersApiData) {
+        console.error("Missing OrdersApiData object in request");
+        throw new Error("Missing OrdersApiData object in create-order request");
+      }
+      
+      // Pass the properly structured data
+      result = await service.createOrder(body);
     }
     // Handle other actions like orders-list, etc.
     else if (body.action) {
