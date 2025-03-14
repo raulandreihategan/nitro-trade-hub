@@ -64,7 +64,17 @@ export class PaymentService {
       }
       
       // Re-assign the cleaned customer data
-      orderData.Customers = customers;
+      orderData.Customers = customers as {
+        client_name: string;
+        mail: string;
+        mobile?: string;
+        tax_id?: string;
+        country?: string;
+        city?: string;
+        state?: string;
+        zip?: string;
+        address?: string;
+      };
 
       // Generate a merchant_order_id if not provided
       if (!orderData.OrdersApiData.merchant_order_id) {
