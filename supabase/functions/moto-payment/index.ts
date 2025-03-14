@@ -137,7 +137,15 @@ class RealistoService {
         }
       }
 
-      console.log("Making request to API with prepared data:", JSON.stringify(orderData, null, 2));
+      // IMPORTANT: Remove the action field before sending to the API
+      // The PHP example doesn't include an action field
+      const apiOrderData = { ...orderData };
+      if (apiOrderData.action) {
+        delete apiOrderData.action;
+        console.log("Removed 'action' field from order data");
+      }
+
+      console.log("Final payload being sent to Realisto API:", JSON.stringify(apiOrderData, null, 2));
 
       const response = await fetch(`${this.baseUrl}/orders/create`, {
         method: "POST",
@@ -145,7 +153,7 @@ class RealistoService {
           "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(orderData),
+        body: JSON.stringify(apiOrderData),
       });
 
       console.log("Create order response status:", response.status);
@@ -233,8 +241,10 @@ serve(async (req) => {
         throw new Error("Missing OrdersApiData object in create-order request");
       }
       
-      // Pass the properly structured data
-      result = await service.createOrder(body);
+      // Pass the properly structured data - IMPORTANT: Remove the action field
+      const orderData = { ...body };
+      delete orderData.action; // Remove the action field before sending to the API
+      result = await service.createOrder(orderData);
     }
     // Handle other actions like orders-list, etc.
     else if (body.action) {

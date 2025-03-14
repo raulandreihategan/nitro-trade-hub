@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 /**
@@ -67,10 +68,18 @@ export class PaymentService {
         console.log('Generated merchant_order_id:', orderData.OrdersApiData.merchant_order_id);
       }
 
-      // Prepare the order data exactly as expected by the API
-      // This follows the PHP example structure precisely
+      // Format mobile phone number if present
+      if (orderData.Customers && orderData.Customers.mobile) {
+        const phoneNumber = orderData.Customers.mobile.replace(/\s+/g, '');
+        orderData.Customers.mobile = phoneNumber.startsWith('+') 
+          ? phoneNumber 
+          : `+${phoneNumber}`;
+        console.log('Formatted mobile number:', orderData.Customers.mobile);
+      }
+
+      // Prepare the order data exactly as expected by the API - matching the PHP example structure precisely
       const apiPayload = {
-        action: 'create-order',
+        action: 'create-order', // Will be stripped by the edge function
         Orders: {
           terminal_id: orderData.Orders.terminal_id,
           amount: orderData.Orders.amount,
