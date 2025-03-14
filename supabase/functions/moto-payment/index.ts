@@ -32,13 +32,7 @@ class RealistoService {
       console.log(`API Key format: ${this.apiKey ? `${this.apiKey.substring(0, 3)}...${this.apiKey.substring(this.apiKey.length - 3)}` : 'undefined'}`);
       console.log(`API Secret format: ${this.apiSecret ? `${this.apiSecret.substring(0, 3)}...${this.apiSecret.substring(this.apiSecret.length - 3)}` : 'undefined'}`);
       
-      if (!this.apiKey || !this.apiKey.startsWith("OMT")) {
-        throw new Error("Invalid API key format. API key should start with 'OMT'");
-      }
-      
-      if (!this.apiSecret || !this.apiSecret.startsWith("RLC")) {
-        throw new Error("Invalid API secret format. API secret should start with 'RLC'");
-      }
+      this.validateCredentials();
       
       const response = await fetch(`${this.baseUrl}/login`, {
         method: "POST",
@@ -85,6 +79,72 @@ class RealistoService {
       throw error;
     }
   }
+  
+  private validateCredentials() {
+    if (!this.apiKey || !this.apiKey.startsWith("OMT")) {
+      throw new Error("Invalid API key format. API key should start with 'OMT'");
+    }
+    
+    if (!this.apiSecret || !this.apiSecret.startsWith("RLC")) {
+      throw new Error("Invalid API secret format. API secret should start with 'RLC'");
+    }
+  }
+  
+  private validateOrderData(orderData: any) {
+    if (!orderData.Orders) {
+      throw new Error("Missing Orders object in request");
+    }
+    
+    if (!orderData.Customers) {
+      throw new Error("Missing Customers object in request");
+    }
+    
+    if (!orderData.OrdersApiData) {
+      throw new Error("Missing OrdersApiData object in request");
+    }
+  }
+  
+  private formatOrderData(orderData: any) {
+    // Format mobile phone number if present
+    if (orderData.Customers && orderData.Customers.mobile) {
+      const phoneNumber = orderData.Customers.mobile.replace(/\s+/g, '');
+      orderData.Customers.mobile = phoneNumber.startsWith('+') 
+        ? phoneNumber 
+        : `+${phoneNumber}`;
+          
+      console.log("Formatted mobile number:", orderData.Customers.mobile);
+    }
+    
+    // Validate country format if present
+    if (orderData.Customers && orderData.Customers.country) {
+      const country = orderData.Customers.country.trim();
+      if (!/^[A-Z]{3}$/.test(country)) {
+        console.warn(`Country format might be invalid: ${country}. The API expects 3-letter ISO country codes.`);
+      }
+    }
+
+    // Ensure merchant_order_id is set and URLs include the ID
+    if (orderData.OrdersApiData) {
+      const merchantOrderId = orderData.OrdersApiData.merchant_order_id || `order-${Date.now()}`;
+      
+      if (!orderData.OrdersApiData.merchant_order_id) {
+        orderData.OrdersApiData.merchant_order_id = merchantOrderId;
+        console.log("Generated merchant_order_id:", merchantOrderId);
+      }
+      
+      if (orderData.OrdersApiData.okUrl && !orderData.OrdersApiData.okUrl.includes('?id=')) {
+        orderData.OrdersApiData.okUrl = `${orderData.OrdersApiData.okUrl}?id=${merchantOrderId}`;
+        console.log("Updated okUrl:", orderData.OrdersApiData.okUrl);
+      }
+      
+      if (orderData.OrdersApiData.koUrl && !orderData.OrdersApiData.koUrl.includes('?id=')) {
+        orderData.OrdersApiData.koUrl = `${orderData.OrdersApiData.koUrl}?id=${merchantOrderId}`;
+        console.log("Updated koUrl:", orderData.OrdersApiData.koUrl);
+      }
+    }
+    
+    return orderData;
+  }
 
   async createOrder(orderData: any): Promise<any> {
     try {
@@ -94,52 +154,14 @@ class RealistoService {
       console.log("Creating order with original data:", JSON.stringify(orderData, null, 2));
 
       // Ensure we have the exact structure expected by the PHP code
-      if (!orderData.Orders || !orderData.Customers || !orderData.OrdersApiData) {
-        console.error("Invalid order data structure. Missing required objects:", orderData);
-        throw new Error("Invalid order data structure. The API requires 'Orders', 'Customers', and 'OrdersApiData' objects.");
-      }
+      this.validateOrderData(orderData);
 
-      // Format mobile phone number if present
-      if (orderData.Customers && orderData.Customers.mobile) {
-        const phoneNumber = orderData.Customers.mobile.replace(/\s+/g, '');
-        orderData.Customers.mobile = phoneNumber.startsWith('+') 
-          ? phoneNumber 
-          : `+${phoneNumber}`;
-          
-        console.log("Formatted mobile number:", orderData.Customers.mobile);
-      }
-      
-      // Validate country format if present - API expects 3-letter ISO codes
-      if (orderData.Customers && orderData.Customers.country) {
-        const country = orderData.Customers.country.trim();
-        if (!/^[A-Z]{3}$/.test(country)) {
-          console.warn(`Country format might be invalid: ${country}. The API expects 3-letter ISO country codes.`);
-        }
-      }
-
-      // Ensure merchant_order_id is set and URLs include the ID
-      if (orderData.OrdersApiData) {
-        const merchantOrderId = orderData.OrdersApiData.merchant_order_id || `order-${Date.now()}`;
-        
-        if (!orderData.OrdersApiData.merchant_order_id) {
-          orderData.OrdersApiData.merchant_order_id = merchantOrderId;
-          console.log("Generated merchant_order_id:", merchantOrderId);
-        }
-        
-        if (orderData.OrdersApiData.okUrl && !orderData.OrdersApiData.okUrl.includes('?id=')) {
-          orderData.OrdersApiData.okUrl = `${orderData.OrdersApiData.okUrl}?id=${merchantOrderId}`;
-          console.log("Updated okUrl:", orderData.OrdersApiData.okUrl);
-        }
-        
-        if (orderData.OrdersApiData.koUrl && !orderData.OrdersApiData.koUrl.includes('?id=')) {
-          orderData.OrdersApiData.koUrl = `${orderData.OrdersApiData.koUrl}?id=${merchantOrderId}`;
-          console.log("Updated koUrl:", orderData.OrdersApiData.koUrl);
-        }
-      }
+      // Format the order data as needed
+      const formattedOrderData = this.formatOrderData(orderData);
 
       // IMPORTANT: Remove the action field before sending to the API
       // The PHP example doesn't include an action field
-      const apiOrderData = { ...orderData };
+      const apiOrderData = { ...formattedOrderData };
       if (apiOrderData.action) {
         delete apiOrderData.action;
         console.log("Removed 'action' field from order data");
@@ -165,20 +187,24 @@ class RealistoService {
         throw new Error(`Failed to create order: ${responseText}`);
       }
 
-      try {
-        const data = JSON.parse(responseText);
-        console.log("Parsed response data:", JSON.stringify(data, null, 2));
-        return data;
-      } catch (e) {
-        console.log("Response was not JSON, checking if it's a direct URL");
-        if (responseText.trim().startsWith('http')) {
-          return { pay_url: responseText.trim() };
-        }
-        throw new Error(`Invalid JSON response: ${responseText}`);
-      }
+      return this.parseResponse(responseText);
     } catch (error) {
       console.error("Error creating order:", error);
       throw error;
+    }
+  }
+  
+  private parseResponse(responseText: string) {
+    try {
+      const data = JSON.parse(responseText);
+      console.log("Parsed response data:", JSON.stringify(data, null, 2));
+      return data;
+    } catch (e) {
+      console.log("Response was not JSON, checking if it's a direct URL");
+      if (responseText.trim().startsWith('http')) {
+        return { pay_url: responseText.trim() };
+      }
+      throw new Error(`Invalid JSON response: ${responseText}`);
     }
   }
 }
@@ -195,83 +221,17 @@ serve(async (req) => {
     const REALISTO_API_KEY = Deno.env.get("MOTO_API_KEY");
     const REALISTO_API_SECRET = Deno.env.get("MOTO_API_SECRET");
     
-    if (!REALISTO_API_KEY || !REALISTO_API_SECRET) {
-      console.error("Missing credentials:", { apiKey: !!REALISTO_API_KEY, apiSecret: !!REALISTO_API_SECRET });
-      throw new Error("Missing Realisto API credentials. Make sure MOTO_API_KEY and MOTO_API_SECRET are set in the Supabase secrets.");
-    }
+    validateEnvironment(REALISTO_API_KEY, REALISTO_API_SECRET);
 
-    if (!REALISTO_API_KEY.startsWith("OMT")) {
-      console.error("API Key format:", REALISTO_API_KEY.substring(0, 3) + "...");
-      throw new Error("Invalid API key format. API key should start with 'OMT'");
-    }
-    
-    if (!REALISTO_API_SECRET.startsWith("RLC")) {
-      console.error("API Secret format:", REALISTO_API_SECRET.substring(0, 3) + "...");
-      throw new Error("Invalid API secret format. API secret should start with 'RLC'");
-    }
-
-    console.log("API credentials loaded successfully");
-    console.log("API Key format:", REALISTO_API_KEY.substring(0, 3) + "...");
-    console.log("API Secret format:", REALISTO_API_SECRET.substring(0, 3) + "...");
-
-    const service = new RealistoService(REALISTO_API_KEY, REALISTO_API_SECRET);
+    const service = new RealistoService(REALISTO_API_KEY!, REALISTO_API_SECRET!);
 
     const body = await req.json();
     console.log("Received request:", JSON.stringify(body, null, 2));
 
-    let result;
-    
-    // Handle order creation with proper structure
-    if (body.action === "create-order") {
-      console.log("Processing create-order action");
-      
-      // Verify we have the proper structure we need
-      if (!body.Orders) {
-        console.error("Missing Orders object in request");
-        throw new Error("Missing Orders object in create-order request");
-      }
-      
-      if (!body.Customers) {
-        console.error("Missing Customers object in request");
-        throw new Error("Missing Customers object in create-order request");
-      }
-      
-      if (!body.OrdersApiData) {
-        console.error("Missing OrdersApiData object in request");
-        throw new Error("Missing OrdersApiData object in create-order request");
-      }
-      
-      // Pass the properly structured data - IMPORTANT: Remove the action field
-      const orderData = { ...body };
-      delete orderData.action; // Remove the action field before sending to the API
-      result = await service.createOrder(orderData);
-    }
-    // Handle other actions like orders-list, etc.
-    else if (body.action) {
-      if (body.action === "orders-list" || 
-          body.action === "get-terminals" || 
-          body.action === "cancel-order" || 
-          body.action === "refund-order") {
-        throw new Error(`${body.action} not implemented yet`);
-      } else {
-        throw new Error("Invalid action");
-      }
-    }
-    // Handle any other case as an error
-    else {
-      throw new Error("Invalid request format. Missing required fields.");
-    }
+    let result = await processRequest(body, service);
     
     if (result) {
-      console.log("Final result to return to client:", JSON.stringify(result, null, 2));
-      
-      if (!result.pay_url && typeof result === 'string' && result.includes('http')) {
-        result = { pay_url: result.trim() };
-      }
-      
-      if (!result.pay_url && result.body && result.body.pay_url) {
-        result.pay_url = result.body.pay_url;
-      }
+      result = formatResult(result);
     }
 
     return new Response(JSON.stringify(result), {
@@ -281,29 +241,97 @@ serve(async (req) => {
 
   } catch (error: any) {
     console.error("Operation failed:", error);
-    
-    let errorMessage = error.message || "Operation failed with the Realisto API";
-    let errorDetails = "Please check your API credentials and try again";
-    
-    if (errorMessage.includes("Invalid API key format") || errorMessage.includes("Invalid API secret format")) {
-      errorDetails = "Please ensure your API keys are in the correct format.";
-    } else if (errorMessage.includes("Login failed")) {
-      errorDetails = "Authentication failed. Please check your API credentials.";
-    } else if (errorMessage.includes("mobile")) {
-      errorDetails = "Please provide a valid phone number in international format (+XXXXXXXXXXX).";
-    } else if (errorMessage.includes("country")) {
-      errorDetails = "The country format is invalid. Please use a 3-letter ISO country code (e.g., ESP for Spain).";
-    } else if (errorMessage.includes("Undefined index")) {
-      errorMessage = "API request format error: " + errorMessage;
-      errorDetails = "The request structure doesn't match what the API expects. Please check the format.";
-    }
-    
-    return new Response(JSON.stringify({
-      error: errorMessage,
-      details: errorDetails
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500
-    });
+    return createErrorResponse(error, corsHeaders);
   }
 });
+
+// Helper functions for the edge function
+function validateEnvironment(apiKey?: string, apiSecret?: string) {
+  if (!apiKey || !apiSecret) {
+    console.error("Missing credentials:", { apiKey: !!apiKey, apiSecret: !!apiSecret });
+    throw new Error("Missing Realisto API credentials. Make sure MOTO_API_KEY and MOTO_API_SECRET are set in the Supabase secrets.");
+  }
+
+  if (!apiKey.startsWith("OMT")) {
+    console.error("API Key format:", apiKey.substring(0, 3) + "...");
+    throw new Error("Invalid API key format. API key should start with 'OMT'");
+  }
+  
+  if (!apiSecret.startsWith("RLC")) {
+    console.error("API Secret format:", apiSecret.substring(0, 3) + "...");
+    throw new Error("Invalid API secret format. API secret should start with 'RLC'");
+  }
+
+  console.log("API credentials loaded successfully");
+  console.log("API Key format:", apiKey.substring(0, 3) + "...");
+  console.log("API Secret format:", apiSecret.substring(0, 3) + "...");
+}
+
+async function processRequest(body: any, service: RealistoService) {
+  if (body.action === "create-order") {
+    console.log("Processing create-order action");
+    
+    if (!body.Orders || !body.Customers || !body.OrdersApiData) {
+      console.error("Invalid order data structure:", body);
+      throw new Error("Invalid order data structure. Missing required objects.");
+    }
+    
+    // Pass the properly structured data - IMPORTANT: Remove the action field
+    const orderData = { ...body };
+    delete orderData.action; // Remove the action field before sending to the API
+    return await service.createOrder(orderData);
+  }
+  else if (body.action) {
+    if (body.action === "orders-list" || 
+        body.action === "get-terminals" || 
+        body.action === "cancel-order" || 
+        body.action === "refund-order") {
+      throw new Error(`${body.action} not implemented yet`);
+    } else {
+      throw new Error("Invalid action");
+    }
+  }
+  else {
+    throw new Error("Invalid request format. Missing required fields.");
+  }
+}
+
+function formatResult(result: any) {
+  console.log("Final result to return to client:", JSON.stringify(result, null, 2));
+  
+  if (!result.pay_url && typeof result === 'string' && result.includes('http')) {
+    result = { pay_url: result.trim() };
+  }
+  
+  if (!result.pay_url && result.body && result.body.pay_url) {
+    result.pay_url = result.body.pay_url;
+  }
+  
+  return result;
+}
+
+function createErrorResponse(error: any, corsHeaders: Record<string, string>) {
+  let errorMessage = error.message || "Operation failed with the Realisto API";
+  let errorDetails = "Please check your API credentials and try again";
+  
+  if (errorMessage.includes("Invalid API key format") || errorMessage.includes("Invalid API secret format")) {
+    errorDetails = "Please ensure your API keys are in the correct format.";
+  } else if (errorMessage.includes("Login failed")) {
+    errorDetails = "Authentication failed. Please check your API credentials.";
+  } else if (errorMessage.includes("mobile")) {
+    errorDetails = "Please provide a valid phone number in international format (+XXXXXXXXXXX).";
+  } else if (errorMessage.includes("country")) {
+    errorDetails = "The country format is invalid. Please use a 3-letter ISO country code (e.g., ESP for Spain).";
+  } else if (errorMessage.includes("Undefined index")) {
+    errorMessage = "API request format error: " + errorMessage;
+    errorDetails = "The request structure doesn't match what the API expects. Please check the format.";
+  }
+  
+  return new Response(JSON.stringify({
+    error: errorMessage,
+    details: errorDetails
+  }), {
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    status: 500
+  });
+}

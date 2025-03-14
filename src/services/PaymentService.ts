@@ -1,4 +1,8 @@
+
 import { supabase } from "@/integrations/supabase/client";
+import { cleanCustomerData, validateCountryFormat, formatPhoneNumber, generateMerchantOrderId } from "@/utils/paymentValidation";
+import { prepareOrderPayload, extractPaymentUrl } from "@/utils/paymentTransform";
+import { handlePaymentError } from "@/utils/paymentErrors";
 
 /**
  * Handles interactions with the MOTO payment API
@@ -42,31 +46,21 @@ export class PaymentService {
     try {
       console.log('Creating payment order with data:', orderData);
       
-      // Clean up customer data to ensure no undefined values are sent
-      const customers = { ...orderData.Customers };
+      // Clean up customer data
+      const customers = cleanCustomerData(orderData.Customers);
       
-      // Filter out undefined or null values
-      Object.keys(customers).forEach(key => {
-        const value = customers[key as keyof typeof customers];
-        if (
-          value === undefined || 
-          value === null ||
-          (typeof value === 'object' && value !== null && 
-            '_type' in value && (value as any)?._type === 'undefined')
-        ) {
-          delete customers[key as keyof typeof customers];
-        }
-      });
-      
-      // Format the country value to ISO format if it exists
+      // Validate country format if provided
       if (customers.country) {
-        // Ensure it's a proper ISO country code (3-letter format)
-        // Convert full names to codes if needed or validate existing codes
-        const countryValue = customers.country.trim();
-        // Keep only if it's a valid 3-letter ISO code format
-        if (!/^[A-Z]{3}$/.test(countryValue)) {
-          console.log(`Country format might be invalid: ${countryValue}. The API expects 3-letter ISO country codes.`);
+        const countryValidation = validateCountryFormat(customers.country);
+        if (!countryValidation.isValid && countryValidation.message) {
+          console.log(countryValidation.message);
         }
+      }
+      
+      // Format mobile phone number if present
+      if (customers.mobile) {
+        customers.mobile = formatPhoneNumber(customers.mobile);
+        console.log('Formatted mobile number:', customers.mobile);
       }
       
       // Re-assign the cleaned customer data
@@ -74,115 +68,43 @@ export class PaymentService {
 
       // Generate a merchant_order_id if not provided
       if (!orderData.OrdersApiData.merchant_order_id) {
-        orderData.OrdersApiData.merchant_order_id = `order-${Date.now()}`;
+        orderData.OrdersApiData.merchant_order_id = generateMerchantOrderId();
         console.log('Generated merchant_order_id:', orderData.OrdersApiData.merchant_order_id);
       }
 
-      // Format mobile phone number if present
-      if (orderData.Customers && orderData.Customers.mobile) {
-        const phoneNumber = orderData.Customers.mobile.replace(/\s+/g, '');
-        orderData.Customers.mobile = phoneNumber.startsWith('+') 
-          ? phoneNumber 
-          : `+${phoneNumber}`;
-        console.log('Formatted mobile number:', orderData.Customers.mobile);
-      }
-
-      // Prepare the order data exactly as expected by the API - matching the PHP example structure precisely
-      const apiPayload = {
-        action: 'create-order', // Will be stripped by the edge function
-        Orders: {
-          terminal_id: orderData.Orders.terminal_id,
-          amount: orderData.Orders.amount,
-          lang: orderData.Orders.lang,
-          skip_email: orderData.Orders.skip_email || 0,
-          is_recurring: typeof orderData.Orders.is_recurring === 'boolean' 
-            ? (orderData.Orders.is_recurring ? 1 : 0) 
-            : (orderData.Orders.is_recurring || 0),
-          repeat_count: orderData.Orders.repeat_count,
-          repeat_time: orderData.Orders.repeat_time,
-          repeat_period: orderData.Orders.repeat_period,
-          is_auth: orderData.Orders.is_auth ? 1 : 0,
-          merchant_order_description: orderData.Orders.merchant_order_description,
-        },
-        Customers: orderData.Customers,
-        OrdersApiData: {
-          incrementId: orderData.OrdersApiData.incrementId || orderData.OrdersApiData.merchant_order_id,
-          okUrl: orderData.OrdersApiData.okUrl,
-          koUrl: orderData.OrdersApiData.koUrl,
-          merchant_order_id: orderData.OrdersApiData.merchant_order_id
-        }
-      };
-
+      // Prepare the order data for API
+      const apiPayload = prepareOrderPayload(orderData);
       console.log('Sending formatted order data to API:', JSON.stringify(apiPayload, null, 2));
 
+      // Call the Supabase Edge Function
       const { data, error } = await supabase.functions.invoke('moto-payment', {
-        body: apiPayload,
+        body: {
+          action: 'create-order',
+          ...apiPayload
+        },
       });
 
       if (error) {
         console.error('Supabase function error:', error);
-        
-        // Enhanced error handling
-        if (typeof error === 'object' && error !== null) {
-          // Check for specific error types
-          if ('message' in error && typeof error.message === 'string') {
-            if (error.message.includes('mobile')) {
-              throw new Error('Invalid phone number format. Please use international format (e.g., +34644982327)');
-            }
-            if (error.message.includes('country')) {
-              throw new Error('Country format is invalid. Please use a 3-letter ISO country code (e.g., ESP for Spain)');
-            }
-            if (error.message.includes('API key')) {
-              throw new Error('Payment system configuration error: Invalid API key format');
-            }
-            if (error.message.includes('API secret')) {
-              throw new Error('Payment system configuration error: Invalid API secret format');
-            }
-          }
-        }
-        
-        throw error;
+        throw handlePaymentError(error);
       }
       
       console.log('Payment order created successfully:', data);
       
-      // Check different possible response structures for the payment URL
-      let paymentUrl = null;
+      // Extract payment URL from response
+      const paymentUrl = extractPaymentUrl(data);
       
-      if (data) {
-        // Log the full response for debugging
-        console.log('Full API response:', JSON.stringify(data, null, 2));
-        
-        // Try accessing the URL from various possible response structures
-        if (data.pay_url) {
-          paymentUrl = data.pay_url;
-        } else if (data.body && data.body.pay_url) {
-          paymentUrl = data.body.pay_url;
-        } else if (data.response && data.response.pay_url) {
-          paymentUrl = data.response.pay_url;
-        } else if (typeof data === 'string' && data.includes('http')) {
-          // In case API returns a direct URL string
-          paymentUrl = data.trim();
-        }
-        
-        // Log what we found for debugging
-        console.log('Payment URL found:', paymentUrl);
-        
-        if (paymentUrl) {
-          console.log('Redirecting to payment page:', paymentUrl);
-          window.location.href = paymentUrl;
-          return data;
-        } else {
-          console.error('No payment URL could be extracted from API response:', data);
-          throw new Error('No payment URL found in the payment gateway response');
-        }
+      if (paymentUrl) {
+        console.log('Redirecting to payment page:', paymentUrl);
+        window.location.href = paymentUrl;
+        return data;
       } else {
-        console.error('No data returned from API');
-        throw new Error('No response received from the payment gateway');
+        console.error('No payment URL could be extracted from API response:', data);
+        throw new Error('No payment URL found in the payment gateway response');
       }
     } catch (error: any) {
       console.error('Error creating payment order:', error);
-      throw error;
+      throw handlePaymentError(error);
     }
   }
 
@@ -203,11 +125,11 @@ export class PaymentService {
         },
       });
 
-      if (error) throw error;
+      if (error) throw handlePaymentError(error);
       return data;
     } catch (error) {
       console.error('Error getting orders list:', error);
-      throw error;
+      throw handlePaymentError(error);
     }
   }
 
@@ -222,11 +144,11 @@ export class PaymentService {
         },
       });
 
-      if (error) throw error;
+      if (error) throw handlePaymentError(error);
       return data;
     } catch (error) {
       console.error('Error getting terminals:', error);
-      throw error;
+      throw handlePaymentError(error);
     }
   }
 
@@ -243,11 +165,11 @@ export class PaymentService {
         },
       });
 
-      if (error) throw error;
+      if (error) throw handlePaymentError(error);
       return data;
     } catch (error) {
       console.error('Error canceling order:', error);
-      throw error;
+      throw handlePaymentError(error);
     }
   }
 
@@ -266,11 +188,11 @@ export class PaymentService {
         },
       });
 
-      if (error) throw error;
+      if (error) throw handlePaymentError(error);
       return data;
     } catch (error) {
       console.error('Error refunding order:', error);
-      throw error;
+      throw handlePaymentError(error);
     }
   }
 }
