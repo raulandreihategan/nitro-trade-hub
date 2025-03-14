@@ -94,14 +94,6 @@ class RealistoService {
       console.log("Creating order with original data:", JSON.stringify(orderData, null, 2));
 
       // Ensure we have the exact structure expected by the PHP code
-      // The PHP example shows:
-      // $full_order = array (
-      //   'Orders' => $order_array,
-      //   'Customers' => $this->customer,
-      //   'OrdersApiData' => $this->ordersapidata,
-      // );
-      
-      // Check if we already have the expected structure
       if (!orderData.Orders || !orderData.Customers || !orderData.OrdersApiData) {
         console.error("Invalid order data structure. Missing required objects:", orderData);
         throw new Error("Invalid order data structure. The API requires 'Orders', 'Customers', and 'OrdersApiData' objects.");
@@ -115,6 +107,14 @@ class RealistoService {
           : `+${phoneNumber}`;
           
         console.log("Formatted mobile number:", orderData.Customers.mobile);
+      }
+      
+      // Validate country format if present - API expects 3-letter ISO codes
+      if (orderData.Customers && orderData.Customers.country) {
+        const country = orderData.Customers.country.trim();
+        if (!/^[A-Z]{3}$/.test(country)) {
+          console.warn(`Country format might be invalid: ${country}. The API expects 3-letter ISO country codes.`);
+        }
       }
 
       // Ensure merchant_order_id is set and URLs include the ID
@@ -291,6 +291,8 @@ serve(async (req) => {
       errorDetails = "Authentication failed. Please check your API credentials.";
     } else if (errorMessage.includes("mobile")) {
       errorDetails = "Please provide a valid phone number in international format (+XXXXXXXXXXX).";
+    } else if (errorMessage.includes("country")) {
+      errorDetails = "The country format is invalid. Please use a 3-letter ISO country code (e.g., ESP for Spain).";
     } else if (errorMessage.includes("Undefined index")) {
       errorMessage = "API request format error: " + errorMessage;
       errorDetails = "The request structure doesn't match what the API expects. Please check the format.";

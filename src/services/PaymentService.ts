@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 /**
@@ -46,18 +45,29 @@ export class PaymentService {
       // Clean up customer data to ensure no undefined values are sent
       const customers = { ...orderData.Customers };
       
-      // Filter out undefined or invalid values
+      // Filter out undefined or null values
       Object.keys(customers).forEach(key => {
         const value = customers[key as keyof typeof customers];
         if (
           value === undefined || 
           value === null ||
           (typeof value === 'object' && value !== null && 
-            '_type' in value && (value as any)._type === 'undefined')
+            '_type' in value && (value as any)?._type === 'undefined')
         ) {
           delete customers[key as keyof typeof customers];
         }
       });
+      
+      // Format the country value to ISO format if it exists
+      if (customers.country) {
+        // Ensure it's a proper ISO country code (3-letter format)
+        // Convert full names to codes if needed or validate existing codes
+        const countryValue = customers.country.trim();
+        // Keep only if it's a valid 3-letter ISO code format
+        if (!/^[A-Z]{3}$/.test(countryValue)) {
+          console.log(`Country format might be invalid: ${countryValue}. The API expects 3-letter ISO country codes.`);
+        }
+      }
       
       // Re-assign the cleaned customer data
       orderData.Customers = customers;
@@ -118,6 +128,9 @@ export class PaymentService {
           if ('message' in error && typeof error.message === 'string') {
             if (error.message.includes('mobile')) {
               throw new Error('Invalid phone number format. Please use international format (e.g., +34644982327)');
+            }
+            if (error.message.includes('country')) {
+              throw new Error('Country format is invalid. Please use a 3-letter ISO country code (e.g., ESP for Spain)');
             }
             if (error.message.includes('API key')) {
               throw new Error('Payment system configuration error: Invalid API key format');

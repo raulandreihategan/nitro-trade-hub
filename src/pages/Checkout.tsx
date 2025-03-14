@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { PaymentService } from '@/services/PaymentService';
 import { supabase } from "@/integrations/supabase/client";
 import { CreditCard, ChevronRight, ChevronLeft, Info, Loader2, AlertCircle } from 'lucide-react';
+import CountrySelect from '@/components/CountrySelect';
 
 const Checkout = () => {
   const { items, totalPrice, clearCart } = useCart();
@@ -64,6 +65,8 @@ const Checkout = () => {
         return value && !/^\+[0-9]{6,15}$/.test(value.replace(/\s+/g, '')) 
           ? 'Phone must be in international format starting with + (e.g., +34644982327)' 
           : '';
+      case 'country':
+        return value.trim() === '' ? '' : '';
       case 'taxId':
         return '';
       default:
@@ -94,6 +97,18 @@ const Checkout = () => {
     setErrors(prev => ({
       ...prev,
       [name]: error
+    }));
+  };
+
+  const handleCountryChange = (value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      country: value
+    }));
+
+    setErrors(prev => ({
+      ...prev,
+      country: ''
     }));
   };
 
@@ -244,6 +259,11 @@ const Checkout = () => {
           errorMessage = 'Invalid phone number format. Please use international format (e.g., +34644982327)';
           setErrors(prev => ({ ...prev, phone: errorMessage }));
         }
+        
+        if (error.message.includes('country')) {
+          errorMessage = 'Country format is invalid. Please select a country from the dropdown.';
+          setErrors(prev => ({ ...prev, country: errorMessage }));
+        }
       }
       
       let errorUrl = `/checkout/failed?id=${stateParams?.orderId || ''}`;
@@ -384,14 +404,22 @@ const Checkout = () => {
                       <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">
                         Country
                       </label>
-                      <Input
-                        id="country"
-                        name="country"
+                      <CountrySelect
                         value={formData.country}
-                        onChange={handleInputChange}
-                        placeholder="Spain"
+                        onChange={handleCountryChange}
+                        placeholder="Select your country"
+                        className={errors.country ? "border-red-500" : ""}
                       />
-                      <p className="mt-1 text-xs text-gray-500">Example: ESP</p>
+                      {errors.country ? (
+                        <p className="mt-1 text-sm text-red-600 flex items-center">
+                          <AlertCircle className="h-3 w-3 mr-1" />
+                          {errors.country}
+                        </p>
+                      ) : (
+                        <p className="mt-1 text-xs text-gray-500">
+                          Select country using ISO country code (e.g., ESP for Spain)
+                        </p>
+                      )}
                     </div>
                     
                     <div>
@@ -420,7 +448,7 @@ const Checkout = () => {
                         onChange={handleInputChange}
                         placeholder="BCN"
                       />
-                      <p className="mt-1 text-xs text-gray-500">Example: AL</p>
+                      <p className="mt-1 text-xs text-gray-500">Example: BCN</p>
                     </div>
                     
                     <div>
@@ -434,7 +462,6 @@ const Checkout = () => {
                         onChange={handleInputChange}
                         placeholder="08014"
                       />
-                      <p className="mt-1 text-xs text-gray-500">Example: 234</p>
                     </div>
                     
                     <div className="md:col-span-3">
@@ -448,7 +475,6 @@ const Checkout = () => {
                         onChange={handleInputChange}
                         placeholder="Carrer Sant Pere d'Abanto 16"
                       />
-                      <p className="mt-1 text-xs text-gray-500">Example: dsfdsf 345</p>
                     </div>
                   </div>
                   
