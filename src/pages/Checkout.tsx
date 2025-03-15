@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Header from '@/components/layout/Header';
@@ -273,7 +274,17 @@ const Checkout = () => {
 
       if (result.paymentUrl) {
         console.log('Redirecting to payment URL:', result.paymentUrl);
-        window.location.href = result.paymentUrl;
+        
+        // Show the "redirecting to payment" toast notification
+        toast({
+          title: 'Payment Processing',
+          description: 'Redirecting to payment gateway...',
+        });
+        
+        // Short delay to allow the toast to be shown before redirect
+        setTimeout(() => {
+          window.location.href = result.paymentUrl;
+        }, 1000);
       } else {
         console.warn('No payment URL found, navigating to success page');
         navigate('/order-success', {
