@@ -10,6 +10,7 @@ import { PaymentService } from '@/services/PaymentService';
 import { supabase } from "@/integrations/supabase/client";
 import { CreditCard, ChevronRight, ChevronLeft, Info, Loader2, AlertCircle } from 'lucide-react';
 import CountrySelect from '@/components/CountrySelect';
+
 const Checkout = () => {
   const {
     items,
@@ -22,17 +23,11 @@ const Checkout = () => {
     clientName: '',
     email: '',
     phone: '+44',
-    // Added default example with + prefix
     country: 'GB',
-    // Default to United Kingdom
     city: 'London',
-    // Example city
     state: 'LDN',
-    // Example state abbreviation
     zip: '12345',
-    // Example zip
     address: '123 Payment Street',
-    // Example address
     taxId: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -45,6 +40,7 @@ const Checkout = () => {
     bypassEmptyCartCheck?: boolean;
     orderId?: string;
   } | null;
+
   useEffect(() => {
     const getCurrentUser = async () => {
       const {
@@ -60,8 +56,6 @@ const Checkout = () => {
     };
     getCurrentUser();
   }, []);
-
-  // Removed the useEffect that redirects when cart is empty
 
   const validateField = (name: string, value: string): string => {
     switch (name) {
@@ -79,6 +73,7 @@ const Checkout = () => {
         return '';
     }
   };
+
   const formatPhoneNumber = (phone: string): string => {
     if (!phone) return '';
     let cleaned = phone.replace(/[^\d+]/g, '');
@@ -87,6 +82,7 @@ const Checkout = () => {
     }
     return cleaned;
   };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const {
       name,
@@ -102,6 +98,7 @@ const Checkout = () => {
       [name]: error
     }));
   };
+
   const handleCountryChange = (value: string) => {
     setFormData(prev => ({
       ...prev,
@@ -112,11 +109,11 @@ const Checkout = () => {
       country: value.trim() === '' ? 'Country is required' : ''
     }));
   };
+
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     let isValid = true;
 
-    // Make clientName, email, phone, and country mandatory
     if (!formData.clientName.trim()) {
       newErrors.clientName = 'Full name is required';
       isValid = false;
@@ -136,6 +133,7 @@ const Checkout = () => {
     setErrors(newErrors);
     return isValid;
   };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) {
@@ -184,18 +182,15 @@ const Checkout = () => {
       }
       const formattedPhone = formatPhoneNumber(formData.phone);
 
-      // Create a description of the purchase
       let orderDescription = `Order ${orderId}`;
       if (items.length > 0) {
         const itemDescriptions = items.map(item => `${item.service_title} (${item.option_name})`);
         orderDescription = `Purchase of: ${itemDescriptions.join(', ')}`;
       }
 
-      // Use the exact structure the API expects
       const paymentResult = await PaymentService.createOrder({
         Orders: {
           terminal_id: 88,
-          // This will be set to 88 in the PaymentService
           amount: order.total_amount.toString(),
           lang: 2,
           merchant_order_description: orderDescription
@@ -226,7 +221,6 @@ const Checkout = () => {
       }
       await clearCart();
 
-      // Always redirect to payment URL, don't check if it exists
       if (paymentResult && paymentResult.body && paymentResult.body.pay_url) {
         window.location.href = paymentResult.body.pay_url;
       } else if (paymentResult && paymentResult.pay_url) {
@@ -283,6 +277,7 @@ const Checkout = () => {
       setIsProcessing(false);
     }
   };
+
   return <div className="min-h-screen flex flex-col">
       <Header />
       
@@ -333,11 +328,11 @@ const Checkout = () => {
                       <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
                         Phone Number *
                       </label>
-                      <Input id="phone" name="phone" value={formData.phone} onChange={handleInputChange} placeholder="+34644982327" className={errors.phone ? "border-red-500" : ""} required />
+                      <Input id="phone" name="phone" value={formData.phone} onChange={handleInputChange} placeholder="+44 7911 123456" className={errors.phone ? "border-red-500" : ""} required />
                       {errors.phone ? <p className="mt-1 text-sm text-red-600 flex items-center">
                           <AlertCircle className="h-3 w-3 mr-1" />
                           {errors.phone}
-                        </p> : <p className="mt-1 text-xs text-gray-500">Must start with + followed by country code (e.g., +44123456789)</p>}
+                        </p> : <p className="mt-1 text-xs text-gray-500">Must start with + followed by country code (e.g., +44 7911 123456)</p>}
                     </div>
                     
                     <div>
@@ -383,14 +378,14 @@ const Checkout = () => {
                       <label htmlFor="zip" className="block text-sm font-medium text-gray-700 mb-1">
                         ZIP/Postal Code
                       </label>
-                      <Input id="zip" name="zip" value={formData.zip} onChange={handleInputChange} placeholder="12345" />
+                      <Input id="zip" name="zip" value={formData.zip} onChange={handleInputChange} placeholder="SW1A 1AA" />
                     </div>
                     
                     <div className="md:col-span-3">
                       <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
                         Address
                       </label>
-                      <Input id="address" name="address" value={formData.address} onChange={handleInputChange} placeholder="123 Payment Street" />
+                      <Input id="address" name="address" value={formData.address} onChange={handleInputChange} placeholder="10 Downing Street" />
                     </div>
                   </div>
                   
@@ -445,4 +440,5 @@ const Checkout = () => {
       <Footer />
     </div>;
 };
+
 export default Checkout;
