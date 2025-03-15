@@ -17,7 +17,7 @@ export const handlePaymentError = (error: any): Error => {
     
     // Handle specific error types
     if (error.message.includes('mobile')) {
-      return new Error('Phone must be in international format starting with + (e.g., +34644982327)');
+      return new Error('Phone must be in international format starting with +');
     }
     
     if (error.message.includes('country')) {

@@ -64,7 +64,7 @@ const Checkout = () => {
       case 'email':
         return !/^\S+@\S+\.\S+$/.test(value) ? 'Valid email is required' : '';
       case 'phone':
-        return !/^\+[0-9]{6,15}$/.test(value.replace(/\s+/g, '')) ? 'Phone must be in international format starting with + (e.g., +34644982327)' : '';
+        return !/^\+[0-9]{6,15}$/.test(value.replace(/\s+/g, '')) ? 'Phone must be in international format starting with +' : '';
       case 'country':
         return value.trim() === '' ? 'Country is required' : '';
       case 'taxId':
@@ -123,7 +123,7 @@ const Checkout = () => {
       isValid = false;
     }
     if (!formData.phone || !/^\+[0-9]{6,15}$/.test(formData.phone.replace(/\s+/g, ''))) {
-      newErrors.phone = 'Phone must be in international format starting with + (e.g., +34644982327)';
+      newErrors.phone = 'Phone must be in international format starting with +';
       isValid = false;
     }
     if (!formData.country.trim()) {
@@ -332,7 +332,7 @@ const Checkout = () => {
                       {errors.phone ? <p className="mt-1 text-sm text-red-600 flex items-center">
                           <AlertCircle className="h-3 w-3 mr-1" />
                           {errors.phone}
-                        </p> : <p className="mt-1 text-xs text-gray-500">Phone must be in international format starting with + (e.g., +34644982327)</p>}
+                        </p> : <p className="mt-1 text-xs text-gray-500">Phone must be in international format starting with +</p>}
                     </div>
                     
                     <div>
