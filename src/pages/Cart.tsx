@@ -31,7 +31,7 @@ const Cart = () => {
         return;
       }
       
-      // Navigate to the checkout page
+      // Navigate to the checkout page instead of checking for empty cart
       navigate('/checkout');
     } catch (error: any) {
       console.error('Error during checkout:', error);

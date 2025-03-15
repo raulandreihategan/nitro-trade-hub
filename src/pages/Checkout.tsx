@@ -19,12 +19,12 @@ const Checkout = () => {
   const [formData, setFormData] = useState({
     clientName: '',
     email: '',
-    phone: '',
-    country: '',
-    city: '',
-    state: '',
-    zip: '',
-    address: '',
+    phone: '+44',  // Added default example with + prefix
+    country: 'GB', // Default to United Kingdom
+    city: 'London', // Example city
+    state: 'LDN',  // Example state abbreviation
+    zip: '12345',  // Example zip
+    address: '123 Payment Street', // Example address
     taxId: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -49,11 +49,7 @@ const Checkout = () => {
     getCurrentUser();
   }, []);
 
-  useEffect(() => {
-    if (items.length === 0 && !(stateParams?.bypassEmptyCartCheck)) {
-      navigate('/cart');
-    }
-  }, [items, navigate, stateParams]);
+  // Removed the useEffect that redirects when cart is empty
 
   const validateField = (name: string, value: string): string => {
     switch (name) {
@@ -62,11 +58,11 @@ const Checkout = () => {
       case 'email':
         return !/^\S+@\S+\.\S+$/.test(value) ? 'Valid email is required' : '';
       case 'phone':
-        return value && !/^\+[0-9]{6,15}$/.test(value.replace(/\s+/g, '')) 
+        return !/^\+[0-9]{6,15}$/.test(value.replace(/\s+/g, '')) 
           ? 'Phone must be in international format starting with + (e.g., +34644982327)' 
           : '';
       case 'country':
-        return value.trim() === '' ? '' : '';
+        return value.trim() === '' ? 'Country is required' : '';
       case 'taxId':
         return '';
       default:
@@ -108,7 +104,7 @@ const Checkout = () => {
 
     setErrors(prev => ({
       ...prev,
-      country: ''
+      country: value.trim() === '' ? 'Country is required' : ''
     }));
   };
 
@@ -116,23 +112,26 @@ const Checkout = () => {
     const newErrors: Record<string, string> = {};
     let isValid = true;
     
-    Object.entries(formData).forEach(([key, value]) => {
-      if (key === 'clientName' || key === 'email') {
-        const error = validateField(key, value.toString());
-        if (error) {
-          newErrors[key] = error;
-          isValid = false;
-        }
-      }
-      
-      if (key === 'phone' && value) {
-        const error = validateField(key, value.toString());
-        if (error) {
-          newErrors[key] = error;
-          isValid = false;
-        }
-      }
-    });
+    // Make clientName, email, phone, and country mandatory
+    if (!formData.clientName.trim()) {
+      newErrors.clientName = 'Full name is required';
+      isValid = false;
+    }
+    
+    if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
+      newErrors.email = 'Valid email is required';
+      isValid = false;
+    }
+    
+    if (!formData.phone || !/^\+[0-9]{6,15}$/.test(formData.phone.replace(/\s+/g, ''))) {
+      newErrors.phone = 'Phone must be in international format starting with + (e.g., +34644982327)';
+      isValid = false;
+    }
+    
+    if (!formData.country.trim()) {
+      newErrors.country = 'Country is required';
+      isValid = false;
+    }
     
     setErrors(newErrors);
     return isValid;
@@ -197,12 +196,12 @@ const Checkout = () => {
         order = existingOrder;
       }
 
-      const formattedPhone = formData.phone ? formatPhoneNumber(formData.phone) : undefined;
+      const formattedPhone = formatPhoneNumber(formData.phone);
 
       // Use the exact structure the API expects
       const paymentResult = await PaymentService.createOrder({
         Orders: {
-          terminal_id: 1,
+          terminal_id: 88,  // This will be overridden to 88 in the PaymentService
           amount: order.total_amount.toString(),
           lang: 2,
           merchant_order_description: `Order ${orderId} on Nitrogames`,
@@ -212,7 +211,7 @@ const Checkout = () => {
           mail: formData.email,
           mobile: formattedPhone,
           tax_id: formData.taxId || undefined,
-          country: formData.country || undefined,
+          country: formData.country,
           city: formData.city || undefined,
           state: formData.state || undefined,
           zip: formData.zip || undefined,
@@ -239,9 +238,13 @@ const Checkout = () => {
 
       await clearCart();
       
+      // Always redirect to payment URL, don't check if it exists
       if (paymentResult && paymentResult.body && paymentResult.body.pay_url) {
         window.location.href = paymentResult.body.pay_url;
+      } else if (paymentResult && paymentResult.pay_url) {
+        window.location.href = paymentResult.pay_url;
       } else {
+        console.error('No payment URL found in response:', paymentResult);
         navigate('/order-success', { state: { orderId } });
         toast({
           title: 'Order created',
@@ -363,7 +366,7 @@ const Checkout = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                        Phone Number
+                        Phone Number *
                       </label>
                       <Input
                         id="phone"
@@ -372,6 +375,7 @@ const Checkout = () => {
                         onChange={handleInputChange}
                         placeholder="+34644982327"
                         className={errors.phone ? "border-red-500" : ""}
+                        required
                       />
                       {errors.phone ? (
                         <p className="mt-1 text-sm text-red-600 flex items-center">
@@ -402,7 +406,7 @@ const Checkout = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">
-                        Country
+                        Country *
                       </label>
                       <CountrySelect
                         value={formData.country}
@@ -417,7 +421,7 @@ const Checkout = () => {
                         </p>
                       ) : (
                         <p className="mt-1 text-xs text-gray-500">
-                          Select country using ISO country code (e.g., ESP for Spain)
+                          Select country using ISO country code (e.g., GB for United Kingdom)
                         </p>
                       )}
                     </div>
@@ -431,7 +435,7 @@ const Checkout = () => {
                         name="city"
                         value={formData.city}
                         onChange={handleInputChange}
-                        placeholder="Barcelona"
+                        placeholder="London"
                       />
                     </div>
                   </div>
@@ -446,9 +450,9 @@ const Checkout = () => {
                         name="state"
                         value={formData.state}
                         onChange={handleInputChange}
-                        placeholder="BCN"
+                        placeholder="LDN"
                       />
-                      <p className="mt-1 text-xs text-gray-500">Example: BCN</p>
+                      <p className="mt-1 text-xs text-gray-500">Example: LDN</p>
                     </div>
                     
                     <div>
@@ -460,7 +464,7 @@ const Checkout = () => {
                         name="zip"
                         value={formData.zip}
                         onChange={handleInputChange}
-                        placeholder="08014"
+                        placeholder="12345"
                       />
                     </div>
                     
@@ -473,7 +477,7 @@ const Checkout = () => {
                         name="address"
                         value={formData.address}
                         onChange={handleInputChange}
-                        placeholder="Carrer Sant Pere d'Abanto 16"
+                        placeholder="123 Payment Street"
                       />
                     </div>
                   </div>
