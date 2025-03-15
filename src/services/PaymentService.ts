@@ -76,6 +76,16 @@ export class PaymentService {
         address?: string;
       };
 
+      // Always set terminal ID to 88
+      orderData.Orders.terminal_id = 88;
+      console.log('Set terminal_id to 88');
+
+      // Convert lang to string
+      if (typeof orderData.Orders.lang === 'number') {
+        orderData.Orders.lang = String(orderData.Orders.lang) as any;
+        console.log('Converted lang to string:', orderData.Orders.lang);
+      }
+
       // Generate a merchant_order_id if not provided
       if (!orderData.OrdersApiData.merchant_order_id) {
         orderData.OrdersApiData.merchant_order_id = generateMerchantOrderId();

@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -118,8 +117,20 @@ class RealistoService {
     // Validate country format if present
     if (orderData.Customers && orderData.Customers.country) {
       const country = orderData.Customers.country.trim();
-      if (!/^[A-Z]{3}$/.test(country)) {
-        console.warn(`Country format might be invalid: ${country}. The API expects 3-letter ISO country codes.`);
+      if (!/^[A-Z]{2}$/.test(country)) {
+        console.warn(`Country format might be invalid: ${country}. The API expects 2-letter ISO country codes.`);
+      }
+    }
+
+    // Always ensure terminal_id is 88
+    if (orderData.Orders) {
+      orderData.Orders.terminal_id = 88;
+      console.log("Set terminal_id to 88");
+      
+      // Convert lang to string if it's a number
+      if (typeof orderData.Orders.lang === 'number') {
+        orderData.Orders.lang = String(orderData.Orders.lang);
+        console.log("Converted lang to string:", orderData.Orders.lang);
       }
     }
 
@@ -321,7 +332,7 @@ function createErrorResponse(error: any, corsHeaders: Record<string, string>) {
   } else if (errorMessage.includes("mobile")) {
     errorDetails = "Please provide a valid phone number in international format (+XXXXXXXXXXX).";
   } else if (errorMessage.includes("country")) {
-    errorDetails = "The country format is invalid. Please use a 3-letter ISO country code (e.g., ESP for Spain).";
+    errorDetails = "The country format is invalid. Please use a 2-letter ISO country code (e.g., ESP for Spain).";
   } else if (errorMessage.includes("Undefined index")) {
     errorMessage = "API request format error: " + errorMessage;
     errorDetails = "The request structure doesn't match what the API expects. Please check the format.";

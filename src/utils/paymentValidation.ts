@@ -26,16 +26,16 @@ export const cleanCustomerData = (customers: Record<string, any>): Record<string
 };
 
 /**
- * Validates country format (3-letter ISO country code)
+ * Validates country format (2-letter ISO country code)
  */
 export const validateCountryFormat = (country: string | undefined): { isValid: boolean; message?: string } => {
   if (!country) return { isValid: true };
   
   const countryValue = country.trim();
-  if (!/^[A-Z]{3}$/.test(countryValue)) {
+  if (!/^[A-Z]{2}$/.test(countryValue)) {
     return { 
       isValid: false, 
-      message: `Country format might be invalid: ${countryValue}. The API expects 3-letter ISO country codes.`
+      message: `Country format might be invalid: ${countryValue}. The API expects 2-letter ISO country codes.`
     };
   }
   
