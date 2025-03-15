@@ -32,7 +32,8 @@ const TermsOfService = () => {
               </div>
               
               <div className="bg-white p-6 md:p-8 rounded-xl shadow-glossy mb-8">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">2. Affiliate Disclosure</h2>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">2. Company Information</h2>
+                <p className="mb-4">NitroGames is operated by INFOATLANTIC ADVISORY S.L., a company registered under the laws of Spain.</p>
                 <div className="flex items-start p-4 bg-amber-50 rounded-lg border border-amber-200 mb-4">
                   <ExternalLink className="h-5 w-5 text-amber-600 mt-0.5 mr-3 flex-shrink-0" />
                   <p className="text-amber-800">
@@ -92,7 +93,7 @@ const TermsOfService = () => {
               
               <div className="bg-white p-6 md:p-8 rounded-xl shadow-glossy mb-8">
                 <h2 className="text-xl font-semibold text-gray-900 mb-4">9. Limitation of Liability</h2>
-                <p className="mb-4">In no event shall NitroLeague, nor its directors, employees, partners, agents, suppliers, or affiliates, be liable for any indirect, incidental, special, consequential or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses, resulting from:</p>
+                <p className="mb-4">In no event shall INFOATLANTIC ADVISORY S.L. (operating as NitroGames), nor its directors, employees, partners, agents, suppliers, or affiliates, be liable for any indirect, incidental, special, consequential or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses, resulting from:</p>
                 <ul className="list-disc pl-6 mb-4">
                   <li>Your access to or use of or inability to access or use the service</li>
                   <li>Any conduct or content of any third party on the service</li>
@@ -110,8 +111,9 @@ const TermsOfService = () => {
               
               <div className="bg-white p-6 md:p-8 rounded-xl shadow-glossy">
                 <h2 className="text-xl font-semibold text-gray-900 mb-4">11. Contact Us</h2>
-                <p>If you have any questions about these Terms, please contact us at:</p>
-                <p className="font-medium">support@nitroleague.com</p>
+                <p className="mb-4">If you have any questions about these Terms, please contact us at:</p>
+                <p className="font-medium">INFOATLANTIC ADVISORY S.L.</p>
+                <p className="font-medium">Email: support@nitroleague.com</p>
               </div>
             </div>
           </div>
