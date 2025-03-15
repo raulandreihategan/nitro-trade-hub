@@ -10,6 +10,7 @@ import { PaymentService } from '@/services/PaymentService';
 import { supabase } from "@/integrations/supabase/client";
 import { CreditCard, ChevronRight, ChevronLeft, Info, Loader2, AlertCircle } from 'lucide-react';
 import CountrySelect from '@/components/CountrySelect';
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const Checkout = () => {
   const {
@@ -31,6 +32,7 @@ const Checkout = () => {
     taxId: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [generalError, setGeneralError] = useState<string | null>(null);
   const {
     toast
   } = useToast();
@@ -84,10 +86,10 @@ const Checkout = () => {
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const {
-      name,
-      value
-    } = e.target;
+    const { name, value } = e.target;
+    
+    if (generalError) setGeneralError(null);
+    
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -100,6 +102,8 @@ const Checkout = () => {
   };
 
   const handleCountryChange = (value: string) => {
+    if (generalError) setGeneralError(null);
+    
     setFormData(prev => ({
       ...prev,
       country: value
@@ -136,6 +140,8 @@ const Checkout = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setGeneralError(null);
+    
     if (!validateForm()) {
       toast({
         title: 'Validation Error',
@@ -144,10 +150,12 @@ const Checkout = () => {
       });
       return;
     }
+    
     try {
       setIsProcessing(true);
       let orderId = stateParams?.orderId;
       let order;
+      
       if (!orderId) {
         const {
           data: newOrder,
@@ -180,6 +188,7 @@ const Checkout = () => {
         if (getOrderError) throw getOrderError;
         order = existingOrder;
       }
+      
       const formattedPhone = formatPhoneNumber(formData.phone);
 
       let orderDescription = `Order ${orderId}`;
@@ -215,6 +224,44 @@ const Checkout = () => {
       });
       
       console.log('Payment result:', result);
+
+      if (!result.success && result.error) {
+        const errorMessage = result.error.message;
+        
+        if (errorMessage.includes('Phone must be')) {
+          setErrors(prev => ({
+            ...prev,
+            phone: errorMessage
+          }));
+          toast({
+            title: 'Invalid Phone Format',
+            description: errorMessage,
+            variant: 'destructive'
+          });
+          return;
+        }
+        
+        if (errorMessage.includes('Country format')) {
+          setErrors(prev => ({
+            ...prev,
+            country: errorMessage
+          }));
+          toast({
+            title: 'Invalid Country Format',
+            description: errorMessage,
+            variant: 'destructive'
+          });
+          return;
+        }
+        
+        setGeneralError(errorMessage);
+        toast({
+          title: 'Payment Error',
+          description: errorMessage,
+          variant: 'destructive'
+        });
+        return;
+      }
       
       if (result.data && result.data.body && result.data.body.order) {
         await supabase.from('orders').update({
@@ -227,12 +274,6 @@ const Checkout = () => {
       if (result.paymentUrl) {
         console.log('Redirecting to payment URL:', result.paymentUrl);
         window.location.href = result.paymentUrl;
-      } else if (result.data && result.data.pay_url) {
-        console.log('Redirecting to payment URL from data.pay_url:', result.data.pay_url);
-        window.location.href = result.data.pay_url;
-      } else if (result.data && result.data.body && result.data.body.pay_url) {
-        console.log('Redirecting to payment URL from data.body.pay_url:', result.data.body.pay_url);
-        window.location.href = result.data.body.pay_url;
       } else {
         console.warn('No payment URL found, navigating to success page');
         navigate('/order-success', {
@@ -246,15 +287,18 @@ const Checkout = () => {
     } catch (error: any) {
       console.error('Error during checkout:', error);
       let errorMessage = 'There was an error processing your payment';
+      
       if (error.message) {
         errorMessage = error.message;
-        if (error.message.includes('mobile')) {
+        
+        if (error.message.includes('mobile') || error.message.includes('phone')) {
           errorMessage = 'Invalid phone number format. Please use international format starting with +';
           setErrors(prev => ({
             ...prev,
             phone: errorMessage
           }));
         }
+        
         if (error.message.includes('country')) {
           errorMessage = 'Country format is invalid. Please select a country from the dropdown.';
           setErrors(prev => ({
@@ -263,17 +307,9 @@ const Checkout = () => {
           }));
         }
       }
-      let errorUrl = `/checkout/failed?id=${stateParams?.orderId || ''}`;
-      try {
-        const errorObj = {
-          error: errorMessage,
-          details: "Please try again or contact support"
-        };
-        errorUrl += `&error=${encodeURIComponent(JSON.stringify(errorObj))}`;
-      } catch (e) {
-        errorUrl += `&error=${encodeURIComponent(errorMessage)}`;
-      }
-      navigate(errorUrl);
+      
+      setGeneralError(errorMessage);
+      
       toast({
         title: 'Checkout failed',
         description: errorMessage,
@@ -298,6 +334,15 @@ const Checkout = () => {
               </button>
             </div>
           </div>
+          
+          {generalError && (
+            <Alert variant="destructive" className="mb-6">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="ml-2">
+                {generalError}
+              </AlertDescription>
+            </Alert>
+          )}
           
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">

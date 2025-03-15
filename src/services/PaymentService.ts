@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { cleanCustomerData, validateCountryFormat, formatPhoneNumber, generateMerchantOrderId } from "@/utils/paymentValidation";
 import { prepareOrderPayload, extractPaymentUrl } from "@/utils/paymentTransform";
@@ -54,11 +53,18 @@ export class PaymentService {
         const countryValidation = validateCountryFormat(customers.country);
         if (!countryValidation.isValid && countryValidation.message) {
           console.log(countryValidation.message);
+          throw new Error(countryValidation.message);
         }
       }
       
       // Format mobile phone number if present
       if (customers.mobile) {
+        // Validate phone format
+        const phoneNumber = customers.mobile.replace(/\s+/g, '');
+        if (!phoneNumber.startsWith('+') || phoneNumber.length < 8) {
+          throw new Error('Phone must be in international format starting with +');
+        }
+        
         customers.mobile = formatPhoneNumber(customers.mobile);
         console.log('Formatted mobile number:', customers.mobile);
       }
@@ -134,6 +140,10 @@ export class PaymentService {
         console.error('Supabase function error:', error);
         throw handlePaymentError(error);
       }
+
+      if (!data) {
+        throw new Error('No response received from payment gateway');
+      }
       
       console.log('Payment order created successfully:', data);
       
@@ -141,16 +151,19 @@ export class PaymentService {
       const paymentUrl = extractPaymentUrl(data);
       
       if (paymentUrl) {
-        console.log('Redirecting to payment page:', paymentUrl);
-        // Return the data first, and let the calling code handle the redirect
-        return { data, paymentUrl };
+        console.log('Payment URL found:', paymentUrl);
+        return { success: true, data, paymentUrl };
       } else {
         console.error('No payment URL could be extracted from API response:', data);
         throw new Error('No payment URL found in the payment gateway response');
       }
     } catch (error: any) {
       console.error('Error creating payment order:', error);
-      throw handlePaymentError(error);
+      // Return a proper error object with the error info
+      return { 
+        success: false, 
+        error: handlePaymentError(error) 
+      };
     }
   }
 

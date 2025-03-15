@@ -21,7 +21,7 @@ export const handlePaymentError = (error: any): Error => {
     }
     
     if (error.message.includes('country')) {
-      return new Error('Country format is invalid. Please use a 3-letter ISO country code (e.g., ESP for Spain)');
+      return new Error('Country format is invalid. Please use a 2-letter ISO country code (e.g., GB for United Kingdom)');
     }
     
     if (error.message.includes('API key')) {
@@ -31,7 +31,22 @@ export const handlePaymentError = (error: any): Error => {
     if (error.message.includes('API secret')) {
       return new Error('Payment system configuration error: Invalid API secret format');
     }
+
+    if (error.message.includes('Edge Function')) {
+      return new Error('Payment gateway connection error. Please try again or contact support.');
+    }
+  }
+  
+  // Extract error message from Supabase function response
+  if (error.error && error.error.message) {
+    return new Error(error.error.message);
+  }
+  
+  // For FunctionsHttpError specifically
+  if (error.name === 'FunctionsHttpError') {
+    return new Error('Payment gateway connection error. Please try again or contact support.');
   }
   
   return new Error(errorMessage);
 };
+
