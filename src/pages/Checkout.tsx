@@ -332,7 +332,7 @@ const Checkout = () => {
                       {errors.phone ? <p className="mt-1 text-sm text-red-600 flex items-center">
                           <AlertCircle className="h-3 w-3 mr-1" />
                           {errors.phone}
-                        </p> : <p className="mt-1 text-xs text-gray-500">Must start with + followed by country code (e.g., +44 7911 123456)</p>}
+                        </p> : <p className="mt-1 text-xs text-gray-500">Phone must be in international format starting with + (e.g., +34644982327)</p>}
                     </div>
                     
                     <div>
