@@ -70,14 +70,33 @@ export const prepareOrderPayload = (orderData: {
 export const extractPaymentUrl = (data: any): string | null => {
   if (!data) return null;
   
+  // Direct URL in pay_url property
   if (data.pay_url) {
     return data.pay_url;
-  } else if (data.body && data.body.pay_url) {
+  } 
+  // URL in nested body.pay_url
+  else if (data.body && data.body.pay_url) {
     return data.body.pay_url;
-  } else if (data.response && data.response.pay_url) {
+  } 
+  // URL in nested response.pay_url
+  else if (data.response && data.response.pay_url) {
     return data.response.pay_url;
-  } else if (typeof data === 'string' && data.includes('http')) {
+  }
+  // Direct URL string response
+  else if (typeof data === 'string' && data.includes('http')) {
     return data.trim();
+  }
+  
+  // Recursive search for a URL in any property
+  if (typeof data === 'object') {
+    for (const key in data) {
+      if (typeof data[key] === 'string' && data[key].includes('http')) {
+        return data[key];
+      } else if (typeof data[key] === 'object' && data[key]) {
+        const nestedUrl = extractPaymentUrl(data[key]);
+        if (nestedUrl) return nestedUrl;
+      }
+    }
   }
   
   return null;

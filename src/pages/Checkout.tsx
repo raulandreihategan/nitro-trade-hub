@@ -188,7 +188,7 @@ const Checkout = () => {
         orderDescription = `Purchase of: ${itemDescriptions.join(', ')}`;
       }
 
-      const paymentResult = await PaymentService.createOrder({
+      const result = await PaymentService.createOrder({
         Orders: {
           terminal_id: 88,
           amount: order.total_amount.toString(),
@@ -213,24 +213,30 @@ const Checkout = () => {
           incrementId: orderId.toString()
         }
       });
-      console.log('Payment result:', paymentResult);
-      if (paymentResult && paymentResult.body && paymentResult.body.order) {
+      
+      console.log('Payment result:', result);
+      
+      if (result.data && result.data.body && result.data.body.order) {
         await supabase.from('orders').update({
-          payment_intent_id: paymentResult.body.order.toString()
+          payment_intent_id: result.data.body.order.toString()
         }).eq('id', orderId);
       }
+      
       await clearCart();
 
-      if (paymentResult && paymentResult.body && paymentResult.body.pay_url) {
-        window.location.href = paymentResult.body.pay_url;
-      } else if (paymentResult && paymentResult.pay_url) {
-        window.location.href = paymentResult.pay_url;
+      if (result.paymentUrl) {
+        console.log('Redirecting to payment URL:', result.paymentUrl);
+        window.location.href = result.paymentUrl;
+      } else if (result.data && result.data.pay_url) {
+        console.log('Redirecting to payment URL from data.pay_url:', result.data.pay_url);
+        window.location.href = result.data.pay_url;
+      } else if (result.data && result.data.body && result.data.body.pay_url) {
+        console.log('Redirecting to payment URL from data.body.pay_url:', result.data.body.pay_url);
+        window.location.href = result.data.body.pay_url;
       } else {
-        console.error('No payment URL found in response:', paymentResult);
+        console.warn('No payment URL found, navigating to success page');
         navigate('/order-success', {
-          state: {
-            orderId
-          }
+          state: { orderId }
         });
         toast({
           title: 'Order created',
@@ -243,7 +249,7 @@ const Checkout = () => {
       if (error.message) {
         errorMessage = error.message;
         if (error.message.includes('mobile')) {
-          errorMessage = 'Invalid phone number format. Please use international format (e.g., +34644982327)';
+          errorMessage = 'Invalid phone number format. Please use international format starting with +';
           setErrors(prev => ({
             ...prev,
             phone: errorMessage

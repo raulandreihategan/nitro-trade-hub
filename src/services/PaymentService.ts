@@ -142,8 +142,8 @@ export class PaymentService {
       
       if (paymentUrl) {
         console.log('Redirecting to payment page:', paymentUrl);
-        window.location.href = paymentUrl;
-        return data;
+        // Return the data first, and let the calling code handle the redirect
+        return { data, paymentUrl };
       } else {
         console.error('No payment URL could be extracted from API response:', data);
         throw new Error('No payment URL found in the payment gateway response');

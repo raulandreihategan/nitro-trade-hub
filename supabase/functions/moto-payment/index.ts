@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -62,7 +63,7 @@ class RealistoService {
         throw new Error(`Invalid JSON in login response: ${responseText}`);
       }
       
-      console.log("Login response data:", JSON.stringify(data));
+      console.log("Login response data:", JSON.stringify(data, null, 2));
 
       if (!data.access_token && !data.token) {
         throw new Error(`No access token received in response: ${JSON.stringify(data)}`);
@@ -209,6 +210,12 @@ class RealistoService {
     try {
       const data = JSON.parse(responseText);
       console.log("Parsed response data:", JSON.stringify(data, null, 2));
+      
+      // Ensure we have a pay_url property at the top level
+      if (data.body && data.body.pay_url && !data.pay_url) {
+        data.pay_url = data.body.pay_url;
+      }
+      
       return data;
     } catch (e) {
       console.log("Response was not JSON, checking if it's a direct URL");
@@ -243,6 +250,7 @@ serve(async (req) => {
     
     if (result) {
       result = formatResult(result);
+      console.log("Final formatted result:", JSON.stringify(result, null, 2));
     }
 
     return new Response(JSON.stringify(result), {
@@ -308,16 +316,38 @@ async function processRequest(body: any, service: RealistoService) {
 }
 
 function formatResult(result: any) {
-  console.log("Final result to return to client:", JSON.stringify(result, null, 2));
+  console.log("Formatting result:", JSON.stringify(result, null, 2));
   
-  if (!result.pay_url && typeof result === 'string' && result.includes('http')) {
-    result = { pay_url: result.trim() };
+  // Handle direct URL string responses
+  if (typeof result === 'string' && result.includes('http')) {
+    return { pay_url: result.trim() };
   }
   
-  if (!result.pay_url && result.body && result.body.pay_url) {
-    result.pay_url = result.body.pay_url;
+  // Ensure we have a pay_url at the top level
+  if (!result.pay_url) {
+    if (result.body && result.body.pay_url) {
+      result.pay_url = result.body.pay_url;
+    } else if (typeof result === 'object') {
+      // Search for a URL in any property
+      for (const key in result) {
+        if (typeof result[key] === 'string' && result[key].includes('http')) {
+          result.pay_url = result[key];
+          break;
+        } else if (typeof result[key] === 'object' && result[key]) {
+          for (const subKey in result[key]) {
+            if (typeof result[key][subKey] === 'string' && 
+                result[key][subKey].includes('http')) {
+              result.pay_url = result[key][subKey];
+              break;
+            }
+          }
+          if (result.pay_url) break;
+        }
+      }
+    }
   }
   
+  console.log("Final formatted result:", JSON.stringify(result, null, 2));
   return result;
 }
 
@@ -332,7 +362,7 @@ function createErrorResponse(error: any, corsHeaders: Record<string, string>) {
   } else if (errorMessage.includes("mobile")) {
     errorDetails = "Please provide a valid phone number in international format (+XXXXXXXXXXX).";
   } else if (errorMessage.includes("country")) {
-    errorDetails = "The country format is invalid. Please use a 2-letter ISO country code (e.g., ESP for Spain).";
+    errorDetails = "The country format is invalid. Please use a 2-letter ISO country code (e.g., GB for United Kingdom).";
   } else if (errorMessage.includes("Undefined index")) {
     errorMessage = "API request format error: " + errorMessage;
     errorDetails = "The request structure doesn't match what the API expects. Please check the format.";
