@@ -92,6 +92,32 @@ export class PaymentService {
         console.log('Generated merchant_order_id:', orderData.OrdersApiData.merchant_order_id);
       }
 
+      // Get order items to create a detailed description
+      const orderId = orderData.OrdersApiData.merchant_order_id;
+      let orderDescription = orderData.Orders.merchant_order_description || `Order ${orderId}`;
+      
+      try {
+        const { data: orderItems } = await supabase
+          .from('order_items')
+          .select('*')
+          .eq('order_id', orderId);
+          
+        if (orderItems && orderItems.length > 0) {
+          // Create a more descriptive order description
+          const itemDescriptions = orderItems.map(item => 
+            `${item.service_title} (${item.option_name})`
+          );
+          
+          orderDescription = `Purchase of: ${itemDescriptions.join(', ')}`;
+          console.log('Generated detailed order description:', orderDescription);
+        }
+      } catch (err) {
+        console.log('Could not fetch order items for description, using default', err);
+      }
+      
+      // Set the updated description
+      orderData.Orders.merchant_order_description = orderDescription;
+
       // Prepare the order data for API
       const apiPayload = prepareOrderPayload(orderData);
       console.log('Sending formatted order data to API:', JSON.stringify(apiPayload, null, 2));

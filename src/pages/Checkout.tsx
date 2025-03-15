@@ -198,13 +198,22 @@ const Checkout = () => {
 
       const formattedPhone = formatPhoneNumber(formData.phone);
 
+      // Create a description of the purchase
+      let orderDescription = `Order ${orderId}`;
+      if (items.length > 0) {
+        const itemDescriptions = items.map(item => 
+          `${item.service_title} (${item.option_name})`
+        );
+        orderDescription = `Purchase of: ${itemDescriptions.join(', ')}`;
+      }
+
       // Use the exact structure the API expects
       const paymentResult = await PaymentService.createOrder({
         Orders: {
-          terminal_id: 88,  // This will be overridden to 88 in the PaymentService
+          terminal_id: 88,  // This will be set to 88 in the PaymentService
           amount: order.total_amount.toString(),
           lang: 2,
-          merchant_order_description: `Order ${orderId} on Nitrogames`,
+          merchant_order_description: orderDescription,
         },
         Customers: {
           client_name: formData.clientName,
