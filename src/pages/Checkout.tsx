@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Header from '@/components/layout/Header';
@@ -11,41 +10,54 @@ import { PaymentService } from '@/services/PaymentService';
 import { supabase } from "@/integrations/supabase/client";
 import { CreditCard, ChevronRight, ChevronLeft, Info, Loader2, AlertCircle } from 'lucide-react';
 import CountrySelect from '@/components/CountrySelect';
-
 const Checkout = () => {
-  const { items, totalPrice, clearCart } = useCart();
+  const {
+    items,
+    totalPrice,
+    clearCart
+  } = useCart();
   const [isProcessing, setIsProcessing] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [formData, setFormData] = useState({
     clientName: '',
     email: '',
-    phone: '+44',  // Added default example with + prefix
-    country: 'GB', // Default to United Kingdom
-    city: 'London', // Example city
-    state: 'LDN',  // Example state abbreviation
-    zip: '12345',  // Example zip
-    address: '123 Payment Street', // Example address
-    taxId: '',
+    phone: '+44',
+    // Added default example with + prefix
+    country: 'GB',
+    // Default to United Kingdom
+    city: 'London',
+    // Example city
+    state: 'LDN',
+    // Example state abbreviation
+    zip: '12345',
+    // Example zip
+    address: '123 Payment Street',
+    // Example address
+    taxId: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
-  const stateParams = location.state as { bypassEmptyCartCheck?: boolean, orderId?: string } | null;
-
+  const stateParams = location.state as {
+    bypassEmptyCartCheck?: boolean;
+    orderId?: string;
+  } | null;
   useEffect(() => {
     const getCurrentUser = async () => {
-      const { data } = await supabase.auth.getSession();
+      const {
+        data
+      } = await supabase.auth.getSession();
       setUser(data.session?.user || null);
-      
       if (data.session?.user?.email) {
         setFormData(prev => ({
           ...prev,
-          email: data.session.user.email,
+          email: data.session.user.email
         }));
       }
     };
-    
     getCurrentUser();
   }, []);
 
@@ -58,9 +70,7 @@ const Checkout = () => {
       case 'email':
         return !/^\S+@\S+\.\S+$/.test(value) ? 'Valid email is required' : '';
       case 'phone':
-        return !/^\+[0-9]{6,15}$/.test(value.replace(/\s+/g, '')) 
-          ? 'Phone must be in international format starting with + (e.g., +34644982327)' 
-          : '';
+        return !/^\+[0-9]{6,15}$/.test(value.replace(/\s+/g, '')) ? 'Phone must be in international format starting with + (e.g., +34644982327)' : '';
       case 'country':
         return value.trim() === '' ? 'Country is required' : '';
       case 'taxId':
@@ -69,108 +79,89 @@ const Checkout = () => {
         return '';
     }
   };
-
   const formatPhoneNumber = (phone: string): string => {
     if (!phone) return '';
-    
     let cleaned = phone.replace(/[^\d+]/g, '');
-    
     if (!cleaned.startsWith('+')) {
       cleaned = '+' + cleaned;
     }
-    
     return cleaned;
   };
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
+    const {
+      name,
+      value
+    } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
-    
     const error = validateField(name, value);
     setErrors(prev => ({
       ...prev,
       [name]: error
     }));
   };
-
   const handleCountryChange = (value: string) => {
     setFormData(prev => ({
       ...prev,
       country: value
     }));
-
     setErrors(prev => ({
       ...prev,
       country: value.trim() === '' ? 'Country is required' : ''
     }));
   };
-
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     let isValid = true;
-    
+
     // Make clientName, email, phone, and country mandatory
     if (!formData.clientName.trim()) {
       newErrors.clientName = 'Full name is required';
       isValid = false;
     }
-    
     if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
       newErrors.email = 'Valid email is required';
       isValid = false;
     }
-    
     if (!formData.phone || !/^\+[0-9]{6,15}$/.test(formData.phone.replace(/\s+/g, ''))) {
       newErrors.phone = 'Phone must be in international format starting with + (e.g., +34644982327)';
       isValid = false;
     }
-    
     if (!formData.country.trim()) {
       newErrors.country = 'Country is required';
       isValid = false;
     }
-    
     setErrors(newErrors);
     return isValid;
   };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!validateForm()) {
       toast({
         title: 'Validation Error',
         description: 'Please correct the errors in the form.',
-        variant: 'destructive',
+        variant: 'destructive'
       });
       return;
     }
-    
     try {
       setIsProcessing(true);
-      
       let orderId = stateParams?.orderId;
       let order;
-
       if (!orderId) {
-        const { data: newOrder, error: orderError } = await supabase
-          .from('orders')
-          .insert({
-            user_id: user?.id,
-            total_amount: totalPrice,
-            status: 'pending'
-          })
-          .select()
-          .single();
-        
+        const {
+          data: newOrder,
+          error: orderError
+        } = await supabase.from('orders').insert({
+          user_id: user?.id,
+          total_amount: totalPrice,
+          status: 'pending'
+        }).select().single();
         if (orderError) throw orderError;
-        
         order = newOrder;
         orderId = newOrder.id;
-        
         const orderItems = items.map(item => ({
           order_id: orderId,
           service_id: item.service_id,
@@ -179,41 +170,35 @@ const Checkout = () => {
           option_name: item.option_name,
           price: item.price
         }));
-        
-        const { error: itemsError } = await supabase
-          .from('order_items')
-          .insert(orderItems);
-        
+        const {
+          error: itemsError
+        } = await supabase.from('order_items').insert(orderItems);
         if (itemsError) throw itemsError;
       } else {
-        const { data: existingOrder, error: getOrderError } = await supabase
-          .from('orders')
-          .select('*')
-          .eq('id', orderId)
-          .single();
-          
+        const {
+          data: existingOrder,
+          error: getOrderError
+        } = await supabase.from('orders').select('*').eq('id', orderId).single();
         if (getOrderError) throw getOrderError;
         order = existingOrder;
       }
-
       const formattedPhone = formatPhoneNumber(formData.phone);
 
       // Create a description of the purchase
       let orderDescription = `Order ${orderId}`;
       if (items.length > 0) {
-        const itemDescriptions = items.map(item => 
-          `${item.service_title} (${item.option_name})`
-        );
+        const itemDescriptions = items.map(item => `${item.service_title} (${item.option_name})`);
         orderDescription = `Purchase of: ${itemDescriptions.join(', ')}`;
       }
 
       // Use the exact structure the API expects
       const paymentResult = await PaymentService.createOrder({
         Orders: {
-          terminal_id: 88,  // This will be set to 88 in the PaymentService
+          terminal_id: 88,
+          // This will be set to 88 in the PaymentService
           amount: order.total_amount.toString(),
           lang: 2,
-          merchant_order_description: orderDescription,
+          merchant_order_description: orderDescription
         },
         Customers: {
           client_name: formData.clientName,
@@ -224,29 +209,23 @@ const Checkout = () => {
           city: formData.city || undefined,
           state: formData.state || undefined,
           zip: formData.zip || undefined,
-          address: formData.address || undefined,
+          address: formData.address || undefined
         },
         OrdersApiData: {
           okUrl: `${window.location.origin}/order-success?id=${orderId}`,
           koUrl: `${window.location.origin}/checkout/failed?id=${orderId}`,
           merchant_order_id: orderId.toString(),
-          incrementId: orderId.toString(),
-        },
+          incrementId: orderId.toString()
+        }
       });
-
       console.log('Payment result:', paymentResult);
-
       if (paymentResult && paymentResult.body && paymentResult.body.order) {
-        await supabase
-          .from('orders')
-          .update({
-            payment_intent_id: paymentResult.body.order.toString(),
-          })
-          .eq('id', orderId);
+        await supabase.from('orders').update({
+          payment_intent_id: paymentResult.body.order.toString()
+        }).eq('id', orderId);
       }
-
       await clearCart();
-      
+
       // Always redirect to payment URL, don't check if it exists
       if (paymentResult && paymentResult.body && paymentResult.body.pay_url) {
         window.location.href = paymentResult.body.pay_url;
@@ -254,32 +233,37 @@ const Checkout = () => {
         window.location.href = paymentResult.pay_url;
       } else {
         console.error('No payment URL found in response:', paymentResult);
-        navigate('/order-success', { state: { orderId } });
+        navigate('/order-success', {
+          state: {
+            orderId
+          }
+        });
         toast({
           title: 'Order created',
-          description: 'Your order has been created successfully.',
+          description: 'Your order has been created successfully.'
         });
       }
     } catch (error: any) {
       console.error('Error during checkout:', error);
-      
       let errorMessage = 'There was an error processing your payment';
       if (error.message) {
         errorMessage = error.message;
-        
         if (error.message.includes('mobile')) {
           errorMessage = 'Invalid phone number format. Please use international format (e.g., +34644982327)';
-          setErrors(prev => ({ ...prev, phone: errorMessage }));
+          setErrors(prev => ({
+            ...prev,
+            phone: errorMessage
+          }));
         }
-        
         if (error.message.includes('country')) {
           errorMessage = 'Country format is invalid. Please select a country from the dropdown.';
-          setErrors(prev => ({ ...prev, country: errorMessage }));
+          setErrors(prev => ({
+            ...prev,
+            country: errorMessage
+          }));
         }
       }
-      
       let errorUrl = `/checkout/failed?id=${stateParams?.orderId || ''}`;
-      
       try {
         const errorObj = {
           error: errorMessage,
@@ -289,21 +273,17 @@ const Checkout = () => {
       } catch (e) {
         errorUrl += `&error=${encodeURIComponent(errorMessage)}`;
       }
-      
       navigate(errorUrl);
-      
       toast({
         title: 'Checkout failed',
         description: errorMessage,
-        variant: 'destructive',
+        variant: 'destructive'
       });
     } finally {
       setIsProcessing(false);
     }
   };
-
-  return (
-    <div className="min-h-screen flex flex-col">
+  return <div className="min-h-screen flex flex-col">
       <Header />
       
       <main className="flex-grow pt-24">
@@ -311,10 +291,7 @@ const Checkout = () => {
           <div className="mb-6">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Checkout</h1>
             <div className="flex items-center text-sm text-gray-500">
-              <button 
-                onClick={() => navigate('/cart')}
-                className="flex items-center hover:text-nitro-600 transition-colors"
-              >
+              <button onClick={() => navigate('/cart')} className="flex items-center hover:text-nitro-600 transition-colors">
                 <ChevronLeft className="h-4 w-4 mr-1" />
                 Back to cart
               </button>
@@ -332,43 +309,22 @@ const Checkout = () => {
                       <label htmlFor="clientName" className="block text-sm font-medium text-gray-700 mb-1">
                         Full Name *
                       </label>
-                      <Input
-                        id="clientName"
-                        name="clientName"
-                        value={formData.clientName}
-                        onChange={handleInputChange}
-                        placeholder="John Doe"
-                        className={errors.clientName ? "border-red-500" : ""}
-                        required
-                      />
-                      {errors.clientName && (
-                        <p className="mt-1 text-sm text-red-600 flex items-center">
+                      <Input id="clientName" name="clientName" value={formData.clientName} onChange={handleInputChange} placeholder="John Doe" className={errors.clientName ? "border-red-500" : ""} required />
+                      {errors.clientName && <p className="mt-1 text-sm text-red-600 flex items-center">
                           <AlertCircle className="h-3 w-3 mr-1" />
                           {errors.clientName}
-                        </p>
-                      )}
+                        </p>}
                     </div>
                     
                     <div>
                       <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                         Email Address *
                       </label>
-                      <Input
-                        id="email"
-                        name="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={handleInputChange}
-                        placeholder="john@example.com"
-                        className={errors.email ? "border-red-500" : ""}
-                        required
-                      />
-                      {errors.email && (
-                        <p className="mt-1 text-sm text-red-600 flex items-center">
+                      <Input id="email" name="email" type="email" value={formData.email} onChange={handleInputChange} placeholder="john@example.com" className={errors.email ? "border-red-500" : ""} required />
+                      {errors.email && <p className="mt-1 text-sm text-red-600 flex items-center">
                           <AlertCircle className="h-3 w-3 mr-1" />
                           {errors.email}
-                        </p>
-                      )}
+                        </p>}
                     </div>
                   </div>
                   
@@ -377,38 +333,18 @@ const Checkout = () => {
                       <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
                         Phone Number *
                       </label>
-                      <Input
-                        id="phone"
-                        name="phone"
-                        value={formData.phone}
-                        onChange={handleInputChange}
-                        placeholder="+34644982327"
-                        className={errors.phone ? "border-red-500" : ""}
-                        required
-                      />
-                      {errors.phone ? (
-                        <p className="mt-1 text-sm text-red-600 flex items-center">
+                      <Input id="phone" name="phone" value={formData.phone} onChange={handleInputChange} placeholder="+34644982327" className={errors.phone ? "border-red-500" : ""} required />
+                      {errors.phone ? <p className="mt-1 text-sm text-red-600 flex items-center">
                           <AlertCircle className="h-3 w-3 mr-1" />
                           {errors.phone}
-                        </p>
-                      ) : (
-                        <p className="mt-1 text-xs text-gray-500">
-                          Must start with + followed by country code (e.g., +34644982327)
-                        </p>
-                      )}
+                        </p> : <p className="mt-1 text-xs text-gray-500">Must start with + followed by country code (e.g., +44123456789)</p>}
                     </div>
                     
                     <div>
                       <label htmlFor="taxId" className="block text-sm font-medium text-gray-700 mb-1">
                         Tax ID (Optional)
                       </label>
-                      <Input
-                        id="taxId"
-                        name="taxId"
-                        value={formData.taxId}
-                        onChange={handleInputChange}
-                        placeholder="Tax ID / VAT Number"
-                      />
+                      <Input id="taxId" name="taxId" value={formData.taxId} onChange={handleInputChange} placeholder="Tax ID / VAT Number" />
                     </div>
                   </div>
                   
@@ -417,35 +353,20 @@ const Checkout = () => {
                       <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">
                         Country *
                       </label>
-                      <CountrySelect
-                        value={formData.country}
-                        onChange={handleCountryChange}
-                        placeholder="Select your country"
-                        className={errors.country ? "border-red-500" : ""}
-                      />
-                      {errors.country ? (
-                        <p className="mt-1 text-sm text-red-600 flex items-center">
+                      <CountrySelect value={formData.country} onChange={handleCountryChange} placeholder="Select your country" className={errors.country ? "border-red-500" : ""} />
+                      {errors.country ? <p className="mt-1 text-sm text-red-600 flex items-center">
                           <AlertCircle className="h-3 w-3 mr-1" />
                           {errors.country}
-                        </p>
-                      ) : (
-                        <p className="mt-1 text-xs text-gray-500">
+                        </p> : <p className="mt-1 text-xs text-gray-500">
                           Select country using ISO country code (e.g., GB for United Kingdom)
-                        </p>
-                      )}
+                        </p>}
                     </div>
                     
                     <div>
                       <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">
                         City
                       </label>
-                      <Input
-                        id="city"
-                        name="city"
-                        value={formData.city}
-                        onChange={handleInputChange}
-                        placeholder="London"
-                      />
+                      <Input id="city" name="city" value={formData.city} onChange={handleInputChange} placeholder="London" />
                     </div>
                   </div>
                   
@@ -454,13 +375,7 @@ const Checkout = () => {
                       <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-1">
                         State/Province
                       </label>
-                      <Input
-                        id="state"
-                        name="state"
-                        value={formData.state}
-                        onChange={handleInputChange}
-                        placeholder="LDN"
-                      />
+                      <Input id="state" name="state" value={formData.state} onChange={handleInputChange} placeholder="LDN" />
                       <p className="mt-1 text-xs text-gray-500">Example: LDN</p>
                     </div>
                     
@@ -468,46 +383,26 @@ const Checkout = () => {
                       <label htmlFor="zip" className="block text-sm font-medium text-gray-700 mb-1">
                         ZIP/Postal Code
                       </label>
-                      <Input
-                        id="zip"
-                        name="zip"
-                        value={formData.zip}
-                        onChange={handleInputChange}
-                        placeholder="12345"
-                      />
+                      <Input id="zip" name="zip" value={formData.zip} onChange={handleInputChange} placeholder="12345" />
                     </div>
                     
                     <div className="md:col-span-3">
                       <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
                         Address
                       </label>
-                      <Input
-                        id="address"
-                        name="address"
-                        value={formData.address}
-                        onChange={handleInputChange}
-                        placeholder="123 Payment Street"
-                      />
+                      <Input id="address" name="address" value={formData.address} onChange={handleInputChange} placeholder="123 Payment Street" />
                     </div>
                   </div>
                   
                   <div className="pt-4">
-                    <Button
-                      type="submit"
-                      className="w-full flex items-center justify-center"
-                      disabled={isProcessing || Object.values(errors).some(error => error !== '')}
-                    >
-                      {isProcessing ? (
-                        <>
+                    <Button type="submit" className="w-full flex items-center justify-center" disabled={isProcessing || Object.values(errors).some(error => error !== '')}>
+                      {isProcessing ? <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                           Processing...
-                        </>
-                      ) : (
-                        <>
+                        </> : <>
                           Proceed to Payment
                           <ChevronRight className="ml-2 h-4 w-4" />
-                        </>
-                      )}
+                        </>}
                     </Button>
                   </div>
                 </form>
@@ -519,15 +414,13 @@ const Checkout = () => {
                 <h2 className="text-xl font-semibold text-gray-900 mb-4">Order Summary</h2>
                 
                 <div className="space-y-4 mb-4">
-                  {items.map((item) => (
-                    <div key={item.id} className="flex justify-between">
+                  {items.map(item => <div key={item.id} className="flex justify-between">
                       <div>
                         <p className="text-gray-800 font-medium">{item.service_title}</p>
                         <p className="text-gray-600 text-sm">{item.option_name}</p>
                       </div>
                       <p className="text-gray-900 font-medium">${item.price.toFixed(2)}</p>
-                    </div>
-                  ))}
+                    </div>)}
                 </div>
                 
                 <div className="border-t border-gray-200 pt-4 mb-4">
@@ -550,8 +443,6 @@ const Checkout = () => {
       </main>
       
       <Footer />
-    </div>
-  );
+    </div>;
 };
-
 export default Checkout;
