@@ -7,40 +7,42 @@ import { Button } from '@/components/ui/button';
 import { Search, Filter, ChevronDown } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 
-// Sample service categories for video games
+// Updated game-specific categories
 const categories = [
   "All Categories",
   "Boosting",
   "Coaching",
-  "Duo Queue",
-  "Items & Skins",
-  "Accounts",
   "Currency",
+  "Items & Skins",
   "Power Leveling",
-  "Achievements"
+  "Achievements",
+  "Accounts",
+  "Duo Queue"
 ];
 
-// Sample games list
+// Updated games list with popular titles
 const games = [
   "All Games",
   "League of Legends",
   "Valorant",
-  "Call of Duty",
   "Fortnite",
   "World of Warcraft",
-  "Dota 2",
-  "CS:GO",
-  "Overwatch",
+  "Call of Duty",
   "Apex Legends",
-  "Rainbow Six Siege"
+  "CS:GO",
+  "Diablo 4",
+  "Overwatch 2",
+  "Dota 2",
+  "Genshin Impact"
 ];
 
-// Sample extended service data
+// Updated service data with more game-specific services
 const services = [
+  // League of Legends Services
   {
-    id: "boost-1",
-    title: "Rank Boosting",
-    description: "Fast and reliable rank boosting by professional players. Achieve your desired rank in no time.",
+    id: "lol-boost-1",
+    title: "League of Legends Rank Boost",
+    description: "Fast rank boosting from Iron to Challenger by our professional LoL players.",
     image: "https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&q=80&w=1470&ixlib=rb-4.0.3",
     rating: 4.8,
     price: 49.99,
@@ -48,59 +50,105 @@ const services = [
     game: "League of Legends"
   },
   {
-    id: "coaching-1",
-    title: "Pro Coaching",
-    description: "One-on-one coaching sessions with professional players to improve your skills and gameplay.",
+    id: "lol-coaching-1",
+    title: "LoL Pro Coaching",
+    description: "One-on-one coaching sessions with Diamond+ players to improve your skills and gameplay.",
     image: "https://images.unsplash.com/photo-1534423861386-85a16f5d13fd?auto=format&fit=crop&q=80&w=1470&ixlib=rb-4.0.3",
     rating: 4.9,
     price: 29.99,
     category: "Coaching",
-    game: "Valorant"
-  },
-  {
-    id: "duo-1",
-    title: "Duo Queue",
-    description: "Play with a professional player who will help you win games and improve your rank.",
-    image: "https://images.unsplash.com/photo-1560253023-3ec5d502959f?auto=format&fit=crop&q=80&w=1470&ixlib=rb-4.0.3",
-    rating: 4.7,
-    price: 39.99,
-    category: "Duo Queue",
-    game: "Call of Duty"
-  },
-  {
-    id: "skin-1",
-    title: "Rare Skins Bundle",
-    description: "Get access to rare and exclusive skins that will make your character stand out in the game.",
-    image: "https://images.unsplash.com/photo-1580327344181-c1163234e5a0?auto=format&fit=crop&q=80&w=1470&ixlib=rb-4.0.3",
-    rating: 4.9,
-    price: 79.99,
-    category: "Items & Skins",
-    game: "Fortnite"
-  },
-  {
-    id: "account-1",
-    title: "Ranked Account",
-    description: "Get a pre-ranked account with all the champions/characters unlocked. Ready to play competitively.",
-    image: "https://images.unsplash.com/photo-1553481187-be93c21490a9?auto=format&fit=crop&q=80&w=1470&ixlib=rb-4.0.3",
-    rating: 4.6,
-    price: 99.99,
-    category: "Accounts",
     game: "League of Legends"
   },
   {
-    id: "currency-1",
-    title: "Gold Coins Package",
-    description: "Purchase in-game currency for a fraction of the official price. Safe and quick delivery.",
+    id: "lol-skins-1",
+    title: "LoL Skins Package",
+    description: "Get access to premium and limited edition skins for your favorite champions.",
+    image: "https://images.unsplash.com/photo-1560253023-3ec5d502959f?auto=format&fit=crop&q=80&w=1470&ixlib=rb-4.0.3",
+    rating: 4.7,
+    price: 39.99,
+    category: "Items & Skins",
+    game: "League of Legends"
+  },
+  
+  // Valorant Services
+  {
+    id: "valorant-boost-1",
+    title: "Valorant Rank Boosting",
+    description: "Boost your Valorant rank from Iron to Radiant with our professional players.",
+    image: "https://images.unsplash.com/photo-1580327344181-c1163234e5a0?auto=format&fit=crop&q=80&w=1470&ixlib=rb-4.0.3",
+    rating: 4.9,
+    price: 54.99,
+    category: "Boosting",
+    game: "Valorant"
+  },
+  {
+    id: "valorant-coaching-1",
+    title: "Valorant Aim Training",
+    description: "Improve your aim, game sense, and strategies with personalized coaching sessions.",
+    image: "https://images.unsplash.com/photo-1542751110-97427bbecf20?auto=format&fit=crop&q=80&w=1476&ixlib=rb-4.0.3",
+    rating: 4.8,
+    price: 24.99,
+    category: "Coaching",
+    game: "Valorant"
+  },
+  {
+    id: "valorant-skins-1",
+    title: "Valorant Points Package",
+    description: "Get Valorant Points to purchase premium weapon skins and battle passes at a discount.",
+    image: "https://images.unsplash.com/photo-1551103782-8ab07afd45c1?auto=format&fit=crop&q=80&w=1470&ixlib=rb-4.0.3",
+    rating: 4.6,
+    price: 19.99,
+    category: "Currency",
+    game: "Valorant"
+  },
+  
+  // Fortnite Services
+  {
+    id: "fortnite-vbucks-1",
+    title: "Fortnite V-Bucks Bundle",
+    description: "Discounted V-Bucks packages to purchase skins, emotes, and Battle Passes.",
+    image: "https://images.unsplash.com/photo-1519669556878-63bdad8a1a49?auto=format&fit=crop&q=80&w=1471&ixlib=rb-4.0.3",
+    rating: 4.6,
+    price: 19.99,
+    category: "Currency",
+    game: "Fortnite"
+  },
+  {
+    id: "fortnite-wins-1",
+    title: "Fortnite Victory Package",
+    description: "Get guaranteed wins in Fortnite with our professional players carrying your account.",
+    image: "https://images.unsplash.com/photo-1589241062272-c0a000072145?auto=format&fit=crop&q=80&w=1374&ixlib=rb-4.0.3",
+    rating: 4.7,
+    price: 29.99,
+    category: "Boosting",
+    game: "Fortnite"
+  },
+  {
+    id: "fortnite-challenges-1",
+    title: "Battle Pass Challenges",
+    description: "Complete all your Battle Pass challenges to unlock exclusive skins and rewards.",
+    image: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&q=80&w=1547&ixlib=rb-4.0.3",
+    rating: 4.5,
+    price: 34.99,
+    category: "Achievements",
+    game: "Fortnite"
+  },
+  
+  // World of Warcraft Services
+  {
+    id: "wow-gold-1",
+    title: "WoW Gold Package",
+    description: "Safe and reliable World of Warcraft gold delivered to your character within hours.",
     image: "https://images.unsplash.com/photo-1605792657660-596af9009e82?auto=format&fit=crop&q=80&w=1504&ixlib=rb-4.0.3",
     rating: 4.8,
-    price: 19.99,
+    price: 24.99,
     category: "Currency",
     game: "World of Warcraft"
   },
   {
-    id: "level-1",
-    title: "Power Leveling",
-    description: "Quick leveling service to get your character to max level without the grind.",
+    id: "wow-leveling-1",
+    title: "WoW Power Leveling",
+    description: "Level your character from 1 to max level with our efficient boosting service.",
     image: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&q=80&w=1470&ixlib=rb-4.0.3",
     rating: 4.7,
     price: 49.99,
@@ -108,14 +156,14 @@ const services = [
     game: "World of Warcraft"
   },
   {
-    id: "achievement-1",
-    title: "Achievement Hunting",
-    description: "Get those difficult achievements completed by our expert team of gamers.",
-    image: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&q=80&w=1547&ixlib=rb-4.0.3",
-    rating: 4.5,
-    price: 34.99,
-    category: "Achievements",
-    game: "Overwatch"
+    id: "wow-mythic-1",
+    title: "Mythic+ Dungeon Runs",
+    description: "Complete high-level Mythic+ dungeons for gear, achievements, and season rewards.",
+    image: "https://images.unsplash.com/photo-1501854140801-50d01698950b?auto=format&fit=crop&q=80&w=1547&ixlib=rb-4.0.3",
+    rating: 4.9,
+    price: 39.99,
+    category: "Boosting",
+    game: "World of Warcraft"
   }
 ];
 

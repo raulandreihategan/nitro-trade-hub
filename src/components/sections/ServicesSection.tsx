@@ -5,43 +5,47 @@ import { Button } from '@/components/ui/button';
 import ServiceCard from '../ui/ServiceCard';
 import { ChevronRight } from 'lucide-react';
 
-// Sample service data - make sure this matches the data in ServiceDetail.tsx
+// Updated service data focused on specific games and realistic gaming services
 const services = [
   {
-    id: "boost-1",
-    title: "Rank Boosting",
-    description: "Fast and reliable rank boosting by professional players. Achieve your desired rank in no time.",
+    id: "lol-boost-1",
+    title: "League of Legends Rank Boost",
+    description: "Fast rank boosting from Iron to Challenger by our professional LoL players.",
     image: "https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&q=80&w=1470&ixlib=rb-4.0.3",
     rating: 4.8,
     price: 49.99,
-    category: "Boosting"
+    category: "Boosting",
+    game: "League of Legends"
   },
   {
-    id: "coaching-1",
-    title: "Pro Coaching",
-    description: "One-on-one coaching sessions with professional players to improve your skills and gameplay.",
+    id: "lol-coaching-1",
+    title: "LoL Pro Coaching",
+    description: "One-on-one coaching sessions with Diamond+ players to improve your skills and gameplay.",
     image: "https://images.unsplash.com/photo-1534423861386-85a16f5d13fd?auto=format&fit=crop&q=80&w=1470&ixlib=rb-4.0.3",
     rating: 4.9,
     price: 29.99,
-    category: "Coaching"
+    category: "Coaching",
+    game: "League of Legends"
   },
   {
-    id: "duo-1",
-    title: "Duo Queue",
-    description: "Play with a professional player who will help you win games and improve your rank.",
+    id: "lol-skins-1",
+    title: "LoL Skins Package",
+    description: "Get access to premium and limited edition skins for your favorite champions.",
     image: "https://images.unsplash.com/photo-1560253023-3ec5d502959f?auto=format&fit=crop&q=80&w=1470&ixlib=rb-4.0.3",
     rating: 4.7,
     price: 39.99,
-    category: "Duo Queue"
+    category: "Items & Skins",
+    game: "League of Legends"
   },
   {
-    id: "recover-1",
-    title: "Account Recovery",
-    description: "Recover your banned or hacked account with our professional assistance.",
-    image: "https://images.unsplash.com/photo-1553481187-be93c21490a9?auto=format&fit=crop&q=80&w=1470&ixlib=rb-4.0.3",
+    id: "fortnite-vbucks-1",
+    title: "Fortnite V-Bucks Bundle",
+    description: "Discounted V-Bucks packages to purchase skins, emotes, and Battle Passes.",
+    image: "https://images.unsplash.com/photo-1519669556878-63bdad8a1a49?auto=format&fit=crop&q=80&w=1471&ixlib=rb-4.0.3",
     rating: 4.6,
-    price: 59.99,
-    category: "Recovery"
+    price: 19.99,
+    category: "Currency",
+    game: "Fortnite"
   }
 ];
 
@@ -58,7 +62,7 @@ const ServicesSection: React.FC = () => {
             Premium Gaming Services
           </h2>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            From boosting to coaching, we offer a wide range of services to help you elevate your gaming experience.
+            Level up your gaming experience with our boosting, coaching, currency packages, and exclusive in-game items.
           </p>
         </div>
         

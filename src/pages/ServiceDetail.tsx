@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import Header from '@/components/layout/Header';
@@ -8,12 +9,14 @@ import { useToast } from "@/hooks/use-toast";
 import { useCart } from '@/contexts/CartContext';
 import { supabase } from "@/integrations/supabase/client";
 
+// Updated services with detailed game-specific information
 const services = [
+  // League of Legends Services
   {
-    id: "boost-1",
-    title: "Rank Boosting",
-    description: "Fast and reliable rank boosting by professional players. Achieve your desired rank in no time.",
-    fullDescription: "Our rank boosting service is designed to help you reach your desired rank quickly and efficiently. Our team of professional players will play on your account and boost your rank while maintaining a high win rate. We guarantee a secure and reliable service, with regular updates on progress.",
+    id: "lol-boost-1",
+    title: "League of Legends Rank Boost",
+    description: "Fast rank boosting from Iron to Challenger by our professional LoL players.",
+    fullDescription: "Our League of Legends rank boosting service helps you climb the ranked ladder quickly and efficiently. Our team of professional players (Diamond to Challenger) will play on your account using secure VPN connections to boost your rank while maintaining high win rates and preserving your account's safety.",
     image: "https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&q=80&w=1470&ixlib=rb-4.0.3",
     gallery: [
       "https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&q=80&w=1470&ixlib=rb-4.0.3",
@@ -25,38 +28,38 @@ const services = [
     price: 49.99,
     category: "Boosting",
     game: "League of Legends",
-    timeEstimate: "24-48 hours",
+    timeEstimate: "24-72 hours depending on ranks",
     features: [
       "Professional boosters with 5+ years of experience",
-      "Secure account handling with VPN protection",
+      "Secure VPN protection for account safety",
       "Regular progress updates and communication",
-      "Stream option available for complete transparency",
-      "Flexible scheduling to fit your needs"
+      "Champion preference selection available",
+      "Duo boost option available for safer boosting"
     ],
     options: [
       {
-        id: "basic",
-        name: "Basic Boost",
-        description: "Standard rank boosting service",
+        id: "bronze-to-silver",
+        name: "Bronze to Silver",
+        description: "Boost from any Bronze division to Silver",
         price: 49.99
       },
       {
-        id: "premium",
-        name: "Premium Boost",
-        description: "Faster boosting with priority service",
+        id: "silver-to-gold",
+        name: "Silver to Gold",
+        description: "Boost from any Silver division to Gold",
         price: 79.99
       },
       {
-        id: "vip",
-        name: "VIP Boost",
-        description: "Our fastest boosting service with dedicated boosters",
+        id: "gold-to-platinum",
+        name: "Gold to Platinum",
+        description: "Boost from any Gold division to Platinum",
         price: 119.99
       }
     ],
     faqs: [
       {
         question: "How long does the boosting process take?",
-        answer: "The time varies depending on your current rank and your target rank. Generally, it takes 24-48 hours to complete a standard boosting order."
+        answer: "The time varies depending on your current rank and your target rank. Generally, it takes 24-72 hours to complete a standard division boosting order."
       },
       {
         question: "Is my account safe?",
@@ -73,10 +76,10 @@ const services = [
     ]
   },
   {
-    id: "coaching-1",
-    title: "Pro Coaching",
-    description: "One-on-one coaching sessions with professional players to improve your skills and gameplay.",
-    fullDescription: "Our professional coaching service connects you with top-tier players who will analyze your gameplay, identify areas for improvement, and provide personalized guidance. Each session is tailored to your specific needs, whether you're looking to improve your mechanics, game knowledge, or strategic thinking.",
+    id: "lol-coaching-1",
+    title: "LoL Pro Coaching",
+    description: "One-on-one coaching sessions with Diamond+ players to improve your skills and gameplay.",
+    fullDescription: "Our League of Legends coaching service pairs you with high-elo players (Diamond+) who will analyze your gameplay, identify areas for improvement, and provide personalized guidance. Each session is tailored to your specific needs, whether it's improving mechanics, game knowledge, or strategic thinking.",
     image: "https://images.unsplash.com/photo-1534423861386-85a16f5d13fd?auto=format&fit=crop&q=80&w=1470&ixlib=rb-4.0.3",
     gallery: [
       "https://images.unsplash.com/photo-1534423861386-85a16f5d13fd?auto=format&fit=crop&q=80&w=1470&ixlib=rb-4.0.3",
@@ -87,33 +90,33 @@ const services = [
     reviews: 89,
     price: 29.99,
     category: "Coaching",
-    game: "Multiple Games",
+    game: "League of Legends",
     timeEstimate: "1-2 hours per session",
     features: [
-      "One-on-one sessions with professional players",
-      "Personalized feedback and improvement plans",
+      "One-on-one sessions with Diamond+ players",
+      "Role-specific coaching for all positions",
+      "Champion mastery guidance",
       "VOD review and analysis",
-      "Flexible scheduling options",
-      "Follow-up support after sessions"
+      "Custom practice drills and exercises"
     ],
     options: [
       {
-        id: "single",
-        name: "Single Session",
-        description: "One coaching session (1 hour)",
+        id: "single-session",
+        name: "Single Coaching Session",
+        description: "One 1-hour coaching session",
         price: 29.99
       },
       {
-        id: "package",
-        name: "Coaching Package",
-        description: "Five coaching sessions (5 hours total)",
-        price: 124.99
+        id: "three-sessions",
+        name: "Three Session Package",
+        description: "Three 1-hour coaching sessions",
+        price: 79.99
       },
       {
-        id: "premium",
-        name: "Premium Coaching",
-        description: "Ten coaching sessions with priority scheduling",
-        price: 229.99
+        id: "five-sessions",
+        name: "Five Session Package",
+        description: "Five 1-hour coaching sessions with progress tracking",
+        price: 119.99
       }
     ],
     faqs: [
@@ -123,7 +126,7 @@ const services = [
       },
       {
         question: "What do I need for a coaching session?",
-        answer: "You'll need a stable internet connection, Discord for communication, and the game you want coaching for installed on your device."
+        answer: "You'll need a stable internet connection, Discord for communication, and League of Legends installed on your device."
       },
       {
         question: "Can I request a specific coach?",
@@ -136,128 +139,638 @@ const services = [
     ]
   },
   {
-    id: "duo-1",
-    title: "Duo Queue",
-    description: "Play with a professional player who will help you win games and improve your rank.",
-    fullDescription: "Our Duo Queue service pairs you with a professional player who will play alongside you to help you win games and climb the ranks. This is a great option for players who want to learn in a real-game environment while also improving their rank. Our professionals will communicate with you throughout the games to provide tips and guidance.",
+    id: "lol-skins-1",
+    title: "LoL Skins Package",
+    description: "Get access to premium and limited edition skins for your favorite champions.",
+    fullDescription: "Our League of Legends skins package offers you access to premium, rare, and limited edition skins for your favorite champions at discounted prices. We offer safe delivery methods and guaranteed authenticity for all skin purchases.",
     image: "https://images.unsplash.com/photo-1560253023-3ec5d502959f?auto=format&fit=crop&q=80&w=1470&ixlib=rb-4.0.3",
     gallery: [
       "https://images.unsplash.com/photo-1560253023-3ec5d502959f?auto=format&fit=crop&q=80&w=1470&ixlib=rb-4.0.3",
       "https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?auto=format&fit=crop&q=80&w=1470&ixlib=rb-4.0.3",
-      "https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&q=80&w=1470&ixlib=rb-4.0.3"
+      "https://images.unsplash.com/photo-1609741199878-3e8ebf6ef0c2?auto=format&fit=crop&q=80&w=1432&ixlib=rb-4.0.3"
     ],
     rating: 4.7,
     reviews: 124,
     price: 39.99,
-    category: "Duo Queue",
+    category: "Items & Skins",
     game: "League of Legends",
-    timeEstimate: "Varies by package",
+    timeEstimate: "Delivery within 24 hours",
     features: [
-      "Play with professional players with proven track records",
-      "Learn through real game scenarios",
-      "Improve your rank while learning",
-      "Voice communication during games",
-      "Flexible scheduling to fit your availability"
+      "Access to premium and limited edition skins",
+      "Safe and secure delivery methods",
+      "Champion-specific skin bundles available",
+      "Includes rare legacy skins",
+      "Account safety guaranteed"
     ],
     options: [
       {
-        id: "basic",
-        name: "Basic Duo (5 Games)",
-        description: "5 games with a professional player",
+        id: "basic-pack",
+        name: "Basic Skin Pack",
+        description: "5 random premium skins",
         price: 39.99
       },
       {
-        id: "standard",
-        name: "Standard Duo (10 Games)",
-        description: "10 games with a professional player",
-        price: 74.99
+        id: "premium-pack",
+        name: "Premium Skin Pack",
+        description: "10 premium skins of your choice",
+        price: 69.99
       },
       {
-        id: "premium",
-        name: "Premium Duo (20 Games)",
-        description: "20 games with a professional player",
-        price: 129.99
+        id: "ultimate-pack",
+        name: "Ultimate Skin Pack",
+        description: "15 premium skins + 3 ultimate skins",
+        price: 119.99
       }
     ],
     faqs: [
       {
-        question: "How do we communicate during the games?",
-        answer: "We primarily use Discord for voice communication, but we can accommodate other platforms if preferred."
+        question: "How do I receive the skins?",
+        answer: "After purchase, we'll contact you to arrange the delivery of the skins to your account using our secure gifting method."
       },
       {
-        question: "What regions do you support?",
-        answer: "We currently support NA, EU, and Asia regions. Please specify your region when purchasing."
+        question: "Can I choose specific skins?",
+        answer: "Yes, with our Premium and Ultimate packages, you can select specific skins that you want (subject to availability)."
       },
       {
-        question: "Can I choose the professional player?",
-        answer: "You can request specific players, subject to their availability. We'll always try to accommodate your preferences."
+        question: "What if a skin I want is not available?",
+        answer: "If a specific skin you requested is not available, we'll offer you alternatives or provide a partial refund for that skin."
       },
       {
-        question: "What if we lose games?",
-        answer: "While our goal is to win every game, losses can happen. We focus on providing a learning experience regardless of the outcome."
+        question: "Is this service against League of Legends terms of service?",
+        answer: "Our skin delivery methods are designed to comply with Riot Games' terms of service to ensure your account remains in good standing."
+      }
+    ]
+  },
+  
+  // Valorant Services
+  {
+    id: "valorant-boost-1",
+    title: "Valorant Rank Boosting",
+    description: "Boost your Valorant rank from Iron to Radiant with our professional players.",
+    fullDescription: "Our Valorant rank boosting service helps you climb through the competitive ranks quickly and efficiently. Our team of professional players (Immortal and Radiant rank) will play on your account using secure methods to boost your rank while maintaining high win rates and preserving your account's safety.",
+    image: "https://images.unsplash.com/photo-1580327344181-c1163234e5a0?auto=format&fit=crop&q=80&w=1470&ixlib=rb-4.0.3",
+    gallery: [
+      "https://images.unsplash.com/photo-1580327344181-c1163234e5a0?auto=format&fit=crop&q=80&w=1470&ixlib=rb-4.0.3",
+      "https://images.unsplash.com/photo-1627896157734-4d2d20b6c029?auto=format&fit=crop&q=80&w=1470&ixlib=rb-4.0.3",
+      "https://images.unsplash.com/photo-1556438064-2d7646166914?auto=format&fit=crop&q=80&w=1474&ixlib=rb-4.0.3"
+    ],
+    rating: 4.9,
+    reviews: 87,
+    price: 54.99,
+    category: "Boosting",
+    game: "Valorant",
+    timeEstimate: "24-72 hours depending on ranks",
+    features: [
+      "Boosting by Immortal and Radiant players",
+      "Secure VPN protection for account safety",
+      "Agent preference selection available",
+      "Regular progress updates via Discord or email",
+      "Stream option available for complete transparency"
+    ],
+    options: [
+      {
+        id: "iron-to-bronze",
+        name: "Iron to Bronze",
+        description: "Boost from any Iron rank to Bronze",
+        price: 54.99
+      },
+      {
+        id: "bronze-to-silver",
+        name: "Bronze to Silver",
+        description: "Boost from any Bronze rank to Silver",
+        price: 74.99
+      },
+      {
+        id: "silver-to-gold",
+        name: "Silver to Gold",
+        description: "Boost from any Silver rank to Gold",
+        price: 99.99
+      }
+    ],
+    faqs: [
+      {
+        question: "How long does the boosting process take?",
+        answer: "The time varies depending on your current rank and your target rank. Generally, it takes 24-72 hours to complete a standard rank boosting order."
+      },
+      {
+        question: "Is my account safe?",
+        answer: "Yes, we take security very seriously. Our boosters use VPN protection and follow strict security protocols to ensure your account's safety."
+      },
+      {
+        question: "Can I specify which agents to play?",
+        answer: "Yes, you can specify which agents you prefer our boosters to play, which helps make the boosting less detectable."
+      },
+      {
+        question: "What if I get banned?",
+        answer: "While our methods minimize the risk of bans, in the extremely rare case of a ban occurring as a direct result of our boosting service, we offer a full refund or a replacement account of similar value."
       }
     ]
   },
   {
-    id: "recover-1",
-    title: "Account Recovery",
-    description: "Recover your banned or hacked account with our professional assistance.",
-    fullDescription: "Our Account Recovery service helps you regain access to your gaming accounts that have been banned, hacked, or otherwise compromised. Our team of experts works directly with game publishers and platforms to resolve account issues and get you back in the game as quickly as possible.",
-    image: "https://images.unsplash.com/photo-1553481187-be93c21490a9?auto=format&fit=crop&q=80&w=1470&ixlib=rb-4.0.3",
+    id: "valorant-coaching-1",
+    title: "Valorant Aim Training",
+    description: "Improve your aim, game sense, and strategies with personalized coaching sessions.",
+    fullDescription: "Our Valorant aim training service offers personalized coaching to help you improve your aim mechanics, game sense, and tactical understanding. Our coaches are high-rank players with proven track records who will analyze your gameplay and provide targeted exercises to improve your performance.",
+    image: "https://images.unsplash.com/photo-1542751110-97427bbecf20?auto=format&fit=crop&q=80&w=1476&ixlib=rb-4.0.3",
     gallery: [
-      "https://images.unsplash.com/photo-1553481187-be93c21490a9?auto=format&fit=crop&q=80&w=1470&ixlib=rb-4.0.3",
-      "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?auto=format&fit=crop&q=80&w=1470&ixlib=rb-4.0.3",
-      "https://images.unsplash.com/photo-1510511459019-5dda7724fd87?auto=format&fit=crop&q=80&w=1470&ixlib=rb-4.0.3"
+      "https://images.unsplash.com/photo-1542751110-97427bbecf20?auto=format&fit=crop&q=80&w=1476&ixlib=rb-4.0.3",
+      "https://images.unsplash.com/photo-1507457379470-08b800bebc67?auto=format&fit=crop&q=80&w=1528&ixlib=rb-4.0.3",
+      "https://images.unsplash.com/photo-1629429407760-f54a671f9d02?auto=format&fit=crop&q=80&w=1470&ixlib=rb-4.0.3"
     ],
-    rating: 4.6,
-    reviews: 78,
-    price: 59.99,
-    category: "Recovery",
-    game: "Multiple Games",
-    timeEstimate: "3-7 days",
+    rating: 4.8,
+    reviews: 65,
+    price: 24.99,
+    category: "Coaching",
+    game: "Valorant",
+    timeEstimate: "1-2 hours per session",
     features: [
-      "Expert assistance with account recovery procedures",
-      "Direct communication with game publishers",
-      "Documentation preparation and submission",
-      "Security review and recommendations",
-      "Follow-up support after recovery"
+      "Personalized aim training routines",
+      "Crosshair and sensitivity optimization",
+      "Agent-specific ability usage training",
+      "VOD review and analysis",
+      "Map-specific strategies and callouts"
     ],
     options: [
       {
-        id: "standard",
-        name: "Standard Recovery",
-        description: "Basic account recovery service",
+        id: "aim-fundamentals",
+        name: "Aim Fundamentals",
+        description: "1-hour session focused on basic aim mechanics",
+        price: 24.99
+      },
+      {
+        id: "aim-and-positioning",
+        name: "Aim & Positioning Package",
+        description: "3-hour package covering aim and positioning",
         price: 59.99
       },
       {
-        id: "priority",
-        name: "Priority Recovery",
-        description: "Expedited account recovery with priority support",
-        price: 99.99
+        id: "complete-training",
+        name: "Complete Player Package",
+        description: "5-hour comprehensive training package",
+        price: 89.99
+      }
+    ],
+    faqs: [
+      {
+        question: "How do the coaching sessions work?",
+        answer: "Sessions are conducted over Discord with screen sharing. Your coach will watch you play, provide real-time feedback, and assign specific training exercises."
       },
       {
-        id: "complex",
-        name: "Complex Recovery",
-        description: "For accounts with complex issues or multiple platforms",
+        question: "Do I need any special equipment?",
+        answer: "A gaming mouse, headset with microphone, and Discord is required. We also recommend having the ability to record your gameplay for review."
+      },
+      {
+        question: "Can coaching really improve my aim?",
+        answer: "Yes, our structured approach to aim training has shown significant improvements for players at all skill levels, with most seeing results within 1-2 weeks of consistent practice."
+      },
+      {
+        question: "Who are your coaches?",
+        answer: "Our coaches are Immortal and Radiant rank players, many with competitive tournament experience and proven teaching abilities."
+      }
+    ]
+  },
+  {
+    id: "valorant-skins-1",
+    title: "Valorant Points Package",
+    description: "Get Valorant Points to purchase premium weapon skins and battle passes at a discount.",
+    fullDescription: "Our Valorant Points package offers you VP at discounted rates compared to the in-game store. Use these points to purchase premium weapon skins, the latest battle pass, or other in-game cosmetics to enhance your gameplay experience and stand out from other players.",
+    image: "https://images.unsplash.com/photo-1551103782-8ab07afd45c1?auto=format&fit=crop&q=80&w=1470&ixlib=rb-4.0.3",
+    gallery: [
+      "https://images.unsplash.com/photo-1551103782-8ab07afd45c1?auto=format&fit=crop&q=80&w=1470&ixlib=rb-4.0.3",
+      "https://images.unsplash.com/photo-1563089145-599997674d42?auto=format&fit=crop&q=80&w=1470&ixlib=rb-4.0.3",
+      "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&q=80&w=1368&ixlib=rb-4.0.3"
+    ],
+    rating: 4.6,
+    reviews: 112,
+    price: 19.99,
+    category: "Currency",
+    game: "Valorant",
+    timeEstimate: "Delivery within 24 hours",
+    features: [
+      "Discounted Valorant Points packages",
+      "Safe and secure delivery methods",
+      "Use for premium weapon skins",
+      "Purchase battle passes and agent contracts",
+      "Account safety guaranteed"
+    ],
+    options: [
+      {
+        id: "small-vp",
+        name: "1000 Valorant Points",
+        description: "Small Valorant Points package",
+        price: 19.99
+      },
+      {
+        id: "medium-vp",
+        name: "2800 Valorant Points",
+        description: "Medium Valorant Points package",
+        price: 39.99
+      },
+      {
+        id: "large-vp",
+        name: "5350 Valorant Points",
+        description: "Large Valorant Points package",
+        price: 69.99
+      }
+    ],
+    faqs: [
+      {
+        question: "How do I receive the Valorant Points?",
+        answer: "After purchase, we'll contact you to arrange the delivery of the VP to your account using our secure method."
+      },
+      {
+        question: "How long does delivery take?",
+        answer: "We typically deliver Valorant Points within 24 hours of purchase confirmation."
+      },
+      {
+        question: "Is this service against Valorant's terms of service?",
+        answer: "Our delivery methods are designed to comply with Riot Games' terms of service to ensure your account remains in good standing."
+      },
+      {
+        question: "What payment methods do you accept?",
+        answer: "We accept credit/debit cards, PayPal, and various cryptocurrency options for all purchases."
+      }
+    ]
+  },
+  
+  // Fortnite Services
+  {
+    id: "fortnite-vbucks-1",
+    title: "Fortnite V-Bucks Bundle",
+    description: "Discounted V-Bucks packages to purchase skins, emotes, and Battle Passes.",
+    fullDescription: "Our Fortnite V-Bucks bundles offer discounted in-game currency that you can use to purchase cosmetic items, emotes, battle passes, and other in-game content. Get more value for your money with our safe and reliable V-Bucks delivery service.",
+    image: "https://images.unsplash.com/photo-1519669556878-63bdad8a1a49?auto=format&fit=crop&q=80&w=1471&ixlib=rb-4.0.3",
+    gallery: [
+      "https://images.unsplash.com/photo-1519669556878-63bdad8a1a49?auto=format&fit=crop&q=80&w=1471&ixlib=rb-4.0.3",
+      "https://images.unsplash.com/photo-1563089145-599997674d42?auto=format&fit=crop&q=80&w=1470&ixlib=rb-4.0.3",
+      "https://images.unsplash.com/photo-1605792657660-596af9009e82?auto=format&fit=crop&q=80&w=1504&ixlib=rb-4.0.3"
+    ],
+    rating: 4.6,
+    reviews: 203,
+    price: 19.99,
+    category: "Currency",
+    game: "Fortnite",
+    timeEstimate: "Delivery within 24 hours",
+    features: [
+      "Discounted V-Bucks packages",
+      "Safe and secure delivery methods",
+      "Use for skins, emotes, and battle passes",
+      "Available for all platforms",
+      "Account safety guaranteed"
+    ],
+    options: [
+      {
+        id: "small-vbucks",
+        name: "1000 V-Bucks",
+        description: "Small V-Bucks package",
+        price: 19.99
+      },
+      {
+        id: "medium-vbucks",
+        name: "2800 V-Bucks",
+        description: "Medium V-Bucks package",
+        price: 39.99
+      },
+      {
+        id: "large-vbucks",
+        name: "5000 V-Bucks",
+        description: "Large V-Bucks package",
+        price: 69.99
+      }
+    ],
+    faqs: [
+      {
+        question: "How do I receive the V-Bucks?",
+        answer: "After purchase, we'll contact you to arrange the delivery of the V-Bucks to your Fortnite account using our secure method."
+      },
+      {
+        question: "How long does delivery take?",
+        answer: "We typically deliver V-Bucks within 24 hours of purchase confirmation."
+      },
+      {
+        question: "Is this service available for all platforms?",
+        answer: "Yes, our V-Bucks service is available for PC, PlayStation, Xbox, Nintendo Switch, and mobile platforms."
+      },
+      {
+        question: "Is this service against Fortnite's terms of service?",
+        answer: "Our delivery methods are designed to comply with Epic Games' terms of service to ensure your account remains in good standing."
+      }
+    ]
+  },
+  {
+    id: "fortnite-wins-1",
+    title: "Fortnite Victory Package",
+    description: "Get guaranteed wins in Fortnite with our professional players carrying your account.",
+    fullDescription: "Our Fortnite Victory Package guarantees you wins in Solo, Duo, or Squad modes with our professional players carrying your account. We'll help you improve your stats, unlock victory umbrellas, and complete win-based challenges while you either spectate and learn or take a break.",
+    image: "https://images.unsplash.com/photo-1589241062272-c0a000072145?auto=format&fit=crop&q=80&w=1374&ixlib=rb-4.0.3",
+    gallery: [
+      "https://images.unsplash.com/photo-1589241062272-c0a000072145?auto=format&fit=crop&q=80&w=1374&ixlib=rb-4.0.3",
+      "https://images.unsplash.com/photo-1616159356458-3ef5892e8744?auto=format&fit=crop&q=80&w=1374&ixlib=rb-4.0.3",
+      "https://images.unsplash.com/photo-1589395595558-b4edcf91639e?auto=format&fit=crop&q=80&w=1374&ixlib=rb-4.0.3"
+    ],
+    rating: 4.7,
+    reviews: 178,
+    price: 29.99,
+    category: "Boosting",
+    game: "Fortnite",
+    timeEstimate: "Varies by package (typically 1-3 hours per win)",
+    features: [
+      "Guaranteed Victory Royales",
+      "Professional players with high K/D ratios",
+      "Option to spectate and learn or take a break",
+      "Unlock season victory umbrellas",
+      "Complete win-based challenges"
+    ],
+    options: [
+      {
+        id: "single-win",
+        name: "Single Victory",
+        description: "One guaranteed Victory Royale",
+        price: 29.99
+      },
+      {
+        id: "triple-win",
+        name: "Triple Victory Pack",
+        description: "Three guaranteed Victory Royales",
+        price: 69.99
+      },
+      {
+        id: "premium-win",
+        name: "Premium Victory Pack",
+        description: "Five guaranteed Victory Royales + 10+ eliminations per game",
+        price: 99.99
+      }
+    ],
+    faqs: [
+      {
+        question: "How does the Victory Package work?",
+        answer: "After purchase, we'll arrange a time for one of our professional players to log into your account and play matches until achieving the guaranteed number of wins."
+      },
+      {
+        question: "Can I watch while the pro plays on my account?",
+        answer: "Yes, we offer a streaming option where you can watch the games live, communicate with the player, and learn strategies."
+      },
+      {
+        question: "How long does it take to get a win?",
+        answer: "Our pros typically secure a Victory Royale within 1-3 hours, depending on game conditions and lobby difficulty."
+      },
+      {
+        question: "Is my account safe?",
+        answer: "Yes, we use secure methods to access your account and follow strict security protocols to ensure your account's safety."
+      }
+    ]
+  },
+  {
+    id: "fortnite-challenges-1",
+    title: "Battle Pass Challenges",
+    description: "Complete all your Battle Pass challenges to unlock exclusive skins and rewards.",
+    fullDescription: "Our Battle Pass Challenge completion service helps you unlock all the exclusive cosmetics, V-Bucks, and rewards from your Fortnite Battle Pass without spending countless hours grinding. Our team efficiently completes weekly challenges, milestone quests, and special event tasks.",
+    image: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&q=80&w=1547&ixlib=rb-4.0.3",
+    gallery: [
+      "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&q=80&w=1547&ixlib=rb-4.0.3",
+      "https://images.unsplash.com/photo-1472457897821-70d3819a0e24?auto=format&fit=crop&q=80&w=1469&ixlib=rb-4.0.3",
+      "https://images.unsplash.com/photo-1604085572504-a392ddf0d86a?auto=format&fit=crop&q=80&w=1528&ixlib=rb-4.0.3"
+    ],
+    rating: 4.5,
+    reviews: 142,
+    price: 34.99,
+    category: "Achievements",
+    game: "Fortnite",
+    timeEstimate: "24-72 hours depending on challenge volume",
+    features: [
+      "Complete weekly challenges and quests",
+      "Unlock all Battle Pass cosmetics and rewards",
+      "Earn V-Bucks from Battle Pass progression",
+      "Complete special event challenges",
+      "Safe and efficient challenge completion"
+    ],
+    options: [
+      {
+        id: "weekly-challenges",
+        name: "Weekly Challenges",
+        description: "Complete all challenges for one week",
+        price: 34.99
+      },
+      {
+        id: "monthly-challenges",
+        name: "Monthly Challenge Pack",
+        description: "Complete all challenges for one month",
+        price: 89.99
+      },
+      {
+        id: "full-season",
+        name: "Full Season Package",
+        description: "Complete all challenges for the entire season",
         price: 149.99
       }
     ],
     faqs: [
       {
-        question: "What information do I need to provide?",
-        answer: "You'll need to provide any available account details, proof of ownership, and information about how the account was lost or compromised."
+        question: "How long does it take to complete the challenges?",
+        answer: "Completion time varies depending on the number and difficulty of challenges. Weekly challenges typically take 24-48 hours, while a full season package may take 5-7 days."
       },
       {
-        question: "Is account recovery guaranteed?",
-        answer: "While we have a high success rate, recovery cannot be guaranteed as it depends on many factors including game publisher policies and the specific situation."
+        question: "Will you use my V-Bucks or make purchases?",
+        answer: "No, we will never use your V-Bucks or make any purchases on your account without explicit permission."
       },
       {
-        question: "How long does recovery take?",
-        answer: "Most accounts are recovered within 3-7 days, but complex cases may take longer. Priority service reduces wait times when possible."
+        question: "Can I specify which challenges to prioritize?",
+        answer: "Yes, you can specify which challenges or rewards you'd like us to focus on first."
       },
       {
-        question: "Is my personal information secure?",
-        answer: "Yes, we take security seriously and protect all client information with industry-standard encryption and security practices."
+        question: "Is this service against Fortnite's terms of service?",
+        answer: "Our challenge completion methods are designed to comply with Epic Games' terms of service to ensure your account remains in good standing."
+      }
+    ]
+  },
+  
+  // World of Warcraft Services
+  {
+    id: "wow-gold-1",
+    title: "WoW Gold Package",
+    description: "Safe and reliable World of Warcraft gold delivered to your character within hours.",
+    fullDescription: "Our World of Warcraft gold service provides you with a reliable source of in-game currency at competitive rates. Whether you need gold for gear, consumables, mounts, or other purchases, our fast and secure delivery will have you funded quickly so you can focus on enjoying the game.",
+    image: "https://images.unsplash.com/photo-1605792657660-596af9009e82?auto=format&fit=crop&q=80&w=1504&ixlib=rb-4.0.3",
+    gallery: [
+      "https://images.unsplash.com/photo-1605792657660-596af9009e82?auto=format&fit=crop&q=80&w=1504&ixlib=rb-4.0.3",
+      "https://images.unsplash.com/photo-1499346488051-5aa3e40fcccb?auto=format&fit=crop&q=80&w=1470&ixlib=rb-4.0.3",
+      "https://images.unsplash.com/photo-1594410473497-3d7ddb3d595d?auto=format&fit=crop&q=80&w=1374&ixlib=rb-4.0.3"
+    ],
+    rating: 4.8,
+    reviews: 256,
+    price: 24.99,
+    category: "Currency",
+    game: "World of Warcraft",
+    timeEstimate: "Delivery within 1-3 hours",
+    features: [
+      "Safe and secure gold delivery",
+      "Competitive rates",
+      "Available for all realms and factions",
+      "Fast delivery (usually within 1-3 hours)",
+      "24/7 customer support"
+    ],
+    options: [
+      {
+        id: "small-gold",
+        name: "10,000 Gold",
+        description: "Small gold package",
+        price: 24.99
+      },
+      {
+        id: "medium-gold",
+        name: "50,000 Gold",
+        description: "Medium gold package",
+        price: 99.99
+      },
+      {
+        id: "large-gold",
+        name: "200,000 Gold",
+        description: "Large gold package",
+        price: 349.99
+      }
+    ],
+    faqs: [
+      {
+        question: "How is the gold delivered?",
+        answer: "After purchase, we'll contact you to arrange a meeting in-game where our courier will trade you the gold directly."
+      },
+      {
+        question: "How long does delivery take?",
+        answer: "We typically deliver gold within 1-3 hours of purchase confirmation, depending on your realm and availability."
+      },
+      {
+        question: "Is this service available for all realms?",
+        answer: "Yes, we offer gold delivery on all US and EU realms, for both Retail and Classic WoW."
+      },
+      {
+        question: "Is buying gold safe?",
+        answer: "We use sophisticated delivery methods to minimize any risk to your account. Our methods have been refined over years to be as safe as possible."
+      }
+    ]
+  },
+  {
+    id: "wow-leveling-1",
+    title: "WoW Power Leveling",
+    description: "Level your character from 1 to max level with our efficient boosting service.",
+    fullDescription: "Our World of Warcraft power leveling service helps you bypass the grind and get straight to the endgame content. Our professional boosters will level your character efficiently while acquiring appropriate gear along the way, allowing you to enjoy the most exciting aspects of WoW without spending weeks leveling.",
+    image: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&q=80&w=1470&ixlib=rb-4.0.3",
+    gallery: [
+      "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&q=80&w=1470&ixlib=rb-4.0.3",
+      "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&q=80&w=1547&ixlib=rb-4.0.3",
+      "https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?auto=format&fit=crop&q=80&w=1469&ixlib=rb-4.0.3"
+    ],
+    rating: 4.7,
+    reviews: 189,
+    price: 49.99,
+    category: "Power Leveling",
+    game: "World of Warcraft",
+    timeEstimate: "3-7 days depending on level range",
+    features: [
+      "Fast and efficient leveling",
+      "Experienced boosters who know optimal routes",
+      "Basic gear acquisition during leveling",
+      "Professional play that minimizes death and downtime",
+      "Regular progress updates"
+    ],
+    options: [
+      {
+        id: "starter-level",
+        name: "Starter Leveling (1-30)",
+        description: "Level from 1 to 30",
+        price: 49.99
+      },
+      {
+        id: "mid-level",
+        name: "Mid Leveling (30-50)",
+        description: "Level from 30 to 50",
+        price: 69.99
+      },
+      {
+        id: "endgame-level",
+        name: "Endgame Leveling (50-70)",
+        description: "Level from 50 to 70",
+        price: 99.99
+      }
+    ],
+    faqs: [
+      {
+        question: "How long does power leveling take?",
+        answer: "Leveling time varies depending on the level range, but typically takes 3-7 days for a full 1-70 leveling service. Specific level ranges may be completed more quickly."
+      },
+      {
+        question: "Will I get gear while leveling?",
+        answer: "Yes, our boosters will acquire appropriate gear from quests and dungeons during the leveling process to ensure your character is properly equipped."
+      },
+      {
+        question: "Can I specify a leveling path or zones?",
+        answer: "Yes, you can provide specific instructions about preferred zones, quest lines, or leveling methods and we'll try to accommodate your requests."
+      },
+      {
+        question: "Is my account safe during power leveling?",
+        answer: "Yes, we use secure VPN connections and have strict security protocols to ensure your account remains safe during the leveling process."
+      }
+    ]
+  },
+  {
+    id: "wow-mythic-1",
+    title: "Mythic+ Dungeon Runs",
+    description: "Complete high-level Mythic+ dungeons for gear, achievements, and season rewards.",
+    fullDescription: "Our Mythic+ dungeon boost service helps you complete challenging dungeons for valuable gear, achievements, and seasonal rewards. Our team of experienced players will carry you through dungeons of your choice at your desired key level, ensuring smooth runs and maximum rewards.",
+    image: "https://images.unsplash.com/photo-1501854140801-50d01698950b?auto=format&fit=crop&q=80&w=1547&ixlib=rb-4.0.3",
+    gallery: [
+      "https://images.unsplash.com/photo-1501854140801-50d01698950b?auto=format&fit=crop&q=80&w=1547&ixlib=rb-4.0.3",
+      "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&q=80&w=1574&ixlib=rb-4.0.3",
+      "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&q=80&w=1574&ixlib=rb-4.0.3"
+    ],
+    rating: 4.9,
+    reviews: 210,
+    price: 39.99,
+    category: "Boosting",
+    game: "World of Warcraft",
+    timeEstimate: "30-60 minutes per dungeon",
+    features: [
+      "Guaranteed key completion",
+      "Team of 4 experienced players",
+      "Available for all current dungeons",
+      "Timed runs for maximum rewards",
+      "Loot trading for targeted gear acquisition"
+    ],
+    options: [
+      {
+        id: "mythic-5",
+        name: "Mythic+5 Run",
+        description: "Complete one Mythic+5 dungeon of your choice",
+        price: 39.99
+      },
+      {
+        id: "mythic-10",
+        name: "Mythic+10 Run",
+        description: "Complete one Mythic+10 dungeon of your choice",
+        price: 69.99
+      },
+      {
+        id: "mythic-15",
+        name: "Mythic+15 Run",
+        description: "Complete one Mythic+15 dungeon for maximum weekly rewards",
+        price: 99.99
+      }
+    ],
+    faqs: [
+      {
+        question: "How do Mythic+ runs work?",
+        answer: "After purchase, we'll schedule a time for the run. You'll join our team of 4 professional players who will carry you through the dungeon of your choice at the selected key level."
+      },
+      {
+        question: "Can I choose which dungeon to run?",
+        answer: "Yes, you can select any dungeon that's currently available in the Mythic+ rotation."
+      },
+      {
+        question: "Do I get to keep all the loot?",
+        answer: "You'll receive all loot that drops directly for you, and our team will trade you any items they don't need that match your loot specialization."
+      },
+      {
+        question: "What if we fail to complete the key in time?",
+        answer: "We guarantee completion of the dungeon, even if not within the time limit. If we fail to complete the dungeon at all (extremely rare), we'll offer a free re-run or refund."
       }
     ]
   }
