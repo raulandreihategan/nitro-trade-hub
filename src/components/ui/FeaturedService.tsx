@@ -134,9 +134,11 @@ const FeaturedService: React.FC<FeaturedServiceProps> = ({
             <Link to={`/services/${id}`} className="btn-secondary flex-1 sm:flex-auto text-center flex items-center justify-center">
               Details
             </Link>
-            <Button className="btn-primary flex-1 sm:flex-auto">
-              {ctaText}
-            </Button>
+            <Link to={`/services/${id}`}>
+              <Button className="btn-primary flex-1 sm:flex-auto">
+                {ctaText}
+              </Button>
+            </Link>
           </div>
         </div>
       </div>

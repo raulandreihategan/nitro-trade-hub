@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import ServiceCard from '../ui/ServiceCard';
 import { ChevronRight } from 'lucide-react';
 
-// Sample service data
+// Sample service data - make sure this matches the data in ServiceDetail.tsx
 const services = [
   {
     id: "boost-1",
