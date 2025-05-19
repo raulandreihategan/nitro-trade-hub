@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { cleanCustomerData, validateCountryFormat, formatPhoneNumber, generateMerchantOrderId } from "@/utils/paymentValidation";
 import { prepareOrderPayload, extractPaymentUrl } from "@/utils/paymentTransform";
 import { handlePaymentError } from "@/utils/paymentErrors";
+import { convertCurrency } from "@/utils/currencyConverter";
 
 /**
  * Handles interactions with the MOTO payment API
@@ -24,6 +25,7 @@ export class PaymentService {
       repeat_period?: number;
       is_auth?: boolean;
       merchant_order_description?: string;
+      currency?: string; // Added currency field
     };
     Customers: {
       client_name: string;
@@ -91,6 +93,28 @@ export class PaymentService {
       if (typeof orderData.Orders.lang === 'number') {
         orderData.Orders.lang = String(orderData.Orders.lang) as any;
         console.log('Converted lang to string:', orderData.Orders.lang);
+      }
+
+      // Handle currency conversion if needed
+      if (orderData.Orders.currency && orderData.Orders.currency !== 'USD') {
+        const originalAmount = parseFloat(orderData.Orders.amount);
+        const originalCurrency = orderData.Orders.currency;
+        
+        // Convert to USD for payment processing (as our payment API works with USD)
+        const convertedAmount = convertCurrency(originalAmount, originalCurrency, 'USD');
+        
+        console.log(`Currency conversion: ${originalAmount} ${originalCurrency} => ${convertedAmount} USD`);
+        
+        // Update the amount with the converted value
+        orderData.Orders.amount = convertedAmount.toString();
+        
+        // Store original currency and amount in the description for reference
+        const currencyInfo = `(Original: ${originalAmount} ${originalCurrency})`;
+        if (orderData.Orders.merchant_order_description) {
+          orderData.Orders.merchant_order_description += ` ${currencyInfo}`;
+        } else {
+          orderData.Orders.merchant_order_description = `Order ${currencyInfo}`;
+        }
       }
 
       // Generate a merchant_order_id if not provided

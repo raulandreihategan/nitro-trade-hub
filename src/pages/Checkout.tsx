@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Header from '@/components/layout/Header';
@@ -11,6 +12,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { CreditCard, ChevronRight, ChevronLeft, Info, Loader2, AlertCircle } from 'lucide-react';
 import CountrySelect from '@/components/CountrySelect';
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue, 
+} from "@/components/ui/select";
+import { 
+  supportedCurrencies, 
+  convertCurrency, 
+  formatCurrency 
+} from "@/utils/currencyConverter";
 
 const Checkout = () => {
   const {
@@ -20,6 +33,7 @@ const Checkout = () => {
   } = useCart();
   const [isProcessing, setIsProcessing] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [selectedCurrency, setSelectedCurrency] = useState('USD');
   const [formData, setFormData] = useState({
     clientName: '',
     email: '',
@@ -42,6 +56,10 @@ const Checkout = () => {
     bypassEmptyCartCheck?: boolean;
     orderId?: string;
   } | null;
+
+  // Calculate price in selected currency
+  const convertedTotalPrice = convertCurrency(totalPrice, 'USD', selectedCurrency);
+  const formattedPrice = formatCurrency(convertedTotalPrice, selectedCurrency);
 
   useEffect(() => {
     const getCurrentUser = async () => {
@@ -114,6 +132,11 @@ const Checkout = () => {
     }));
   };
 
+  const handleCurrencyChange = (value: string) => {
+    if (generalError) setGeneralError(null);
+    setSelectedCurrency(value);
+  };
+
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     let isValid = true;
@@ -163,7 +186,9 @@ const Checkout = () => {
         } = await supabase.from('orders').insert({
           user_id: user?.id,
           total_amount: totalPrice,
-          status: 'pending'
+          status: 'pending',
+          currency: selectedCurrency !== 'USD' ? selectedCurrency : undefined,
+          original_amount: selectedCurrency !== 'USD' ? convertedTotalPrice : undefined
         }).select().single();
         if (orderError) throw orderError;
         order = newOrder;
@@ -197,12 +222,20 @@ const Checkout = () => {
         orderDescription = `Purchase of: ${itemDescriptions.join(', ')}`;
       }
 
+      // Add currency information to order description if not USD
+      if (selectedCurrency !== 'USD') {
+        orderDescription += ` (Original: ${formatCurrency(convertedTotalPrice, selectedCurrency)})`;
+      }
+
       const result = await PaymentService.createOrder({
         Orders: {
           terminal_id: 1439,
-          amount: order.total_amount.toString(),
+          amount: selectedCurrency !== 'USD' 
+            ? convertCurrency(convertedTotalPrice, selectedCurrency, 'USD').toString()
+            : order.total_amount.toString(),
           lang: 2,
-          merchant_order_description: orderDescription
+          merchant_order_description: orderDescription,
+          currency: selectedCurrency // Add currency information
         },
         Customers: {
           client_name: formData.clientName,
@@ -254,6 +287,19 @@ const Checkout = () => {
           return;
         }
         
+        if (errorMessage.includes('currency')) {
+          setErrors(prev => ({
+            ...prev,
+            currency: errorMessage
+          }));
+          toast({
+            title: 'Currency Error',
+            description: errorMessage,
+            variant: 'destructive'
+          });
+          return;
+        }
+        
         setGeneralError(errorMessage);
         toast({
           title: 'Payment Error',
@@ -265,7 +311,9 @@ const Checkout = () => {
       
       if (result.data && result.data.body && result.data.body.order) {
         await supabase.from('orders').update({
-          payment_intent_id: result.data.body.order.toString()
+          payment_intent_id: result.data.body.order.toString(),
+          currency: selectedCurrency,
+          original_amount: selectedCurrency !== 'USD' ? convertedTotalPrice : undefined
         }).eq('id', orderId);
       }
       
@@ -315,6 +363,10 @@ const Checkout = () => {
             ...prev,
             country: errorMessage
           }));
+        }
+
+        if (error.message.includes('currency')) {
+          errorMessage = 'There was an error with the currency conversion. Please try again or select a different currency.';
         }
       }
       
@@ -442,6 +494,30 @@ const Checkout = () => {
                       <Input id="zip" name="zip" value={formData.zip} onChange={handleInputChange} placeholder="SW1A 1AA" />
                     </div>
                     
+                    <div>
+                      <label htmlFor="currency" className="block text-sm font-medium text-gray-700 mb-1">
+                        Currency
+                      </label>
+                      <Select 
+                        value={selectedCurrency} 
+                        onValueChange={handleCurrencyChange}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select Currency" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {supportedCurrencies.map((currency) => (
+                            <SelectItem key={currency.code} value={currency.code}>
+                              {currency.code} ({currency.symbol}) - {currency.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="mt-1 text-xs text-gray-500">
+                        Select your preferred payment currency
+                      </p>
+                    </div>
+                    
                     <div className="md:col-span-3">
                       <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
                         Address
@@ -482,14 +558,32 @@ const Checkout = () => {
                 <div className="border-t border-gray-200 pt-4 mb-4">
                   <div className="flex justify-between font-semibold">
                     <span>Total</span>
-                    <span className="text-nitro-600">${totalPrice.toFixed(2)}</span>
+                    <span className="text-nitro-600">
+                      {formattedPrice}
+                      {selectedCurrency !== 'USD' && (
+                        <span className="block text-sm text-gray-500 font-normal">
+                          (${totalPrice.toFixed(2)} USD)
+                        </span>
+                      )}
+                    </span>
                   </div>
+                  
+                  {selectedCurrency !== 'USD' && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Exchange rate: 1 USD = {(1 / (exchangeRates.USD / (exchangeRates[selectedCurrency as keyof typeof exchangeRates] || 1))).toFixed(4)} {selectedCurrency}
+                    </p>
+                  )}
                 </div>
                 
                 <div className="bg-gray-50 rounded-lg p-3 text-sm flex items-start">
                   <Info className="h-5 w-5 text-gray-500 mr-2 flex-shrink-0 mt-0.5" />
                   <p className="text-gray-600">
                     Your payment information will be processed securely on the payment page.
+                    {selectedCurrency !== 'USD' && (
+                      <span className="block mt-1">
+                        Currency conversion is provided for your convenience. The final charge may vary slightly due to exchange rate fluctuations.
+                      </span>
+                    )}
                   </p>
                 </div>
               </div>

@@ -128,6 +128,11 @@ class RealistoService {
       orderData.Orders.terminal_id = 1439;
       console.log("Set terminal_id to 1439");
       
+      // Log original currency if present
+      if (orderData.Orders.originalCurrency && orderData.Orders.originalCurrency !== 'USD') {
+        console.log(`Original currency: ${orderData.Orders.originalCurrency}, Original amount: ${orderData.Orders.originalAmount}`);
+      }
+      
       // Convert lang to string if it's a number
       if (typeof orderData.Orders.lang === 'number') {
         orderData.Orders.lang = String(orderData.Orders.lang);
@@ -366,6 +371,8 @@ function createErrorResponse(error: any, corsHeaders: Record<string, string>) {
   } else if (errorMessage.includes("Undefined index")) {
     errorMessage = "API request format error: " + errorMessage;
     errorDetails = "The request structure doesn't match what the API expects. Please check the format.";
+  } else if (errorMessage.includes("currency")) {
+    errorDetails = "There was an error processing the currency conversion. Please check your currency settings.";
   }
   
   return new Response(JSON.stringify({
