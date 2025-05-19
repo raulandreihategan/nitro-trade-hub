@@ -12,13 +12,6 @@ import { CreditCard, ChevronRight, ChevronLeft, Info, Loader2, AlertCircle } fro
 import CountrySelect from '@/components/CountrySelect';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue, 
-} from "@/components/ui/select";
-import { 
   supportedCurrencies, 
   convertCurrency, 
   formatCurrency,
@@ -33,7 +26,8 @@ const Checkout = () => {
   } = useCart();
   const [isProcessing, setIsProcessing] = useState(false);
   const [user, setUser] = useState<any>(null);
-  const [selectedCurrency, setSelectedCurrency] = useState('USD');
+  // Set default currency to USD, but no longer show selection
+  const selectedCurrency = 'USD';
   const [formData, setFormData] = useState({
     clientName: '',
     email: '',
@@ -57,11 +51,11 @@ const Checkout = () => {
     orderId?: string;
   } | null;
 
-  // Calculate price in selected currency
+  // Calculate price in selected currency - keep this logic
   const convertedTotalPrice = convertCurrency(totalPrice, 'USD', selectedCurrency);
   const formattedPrice = formatCurrency(convertedTotalPrice, selectedCurrency);
   
-  // Also calculate EUR price for payment processing
+  // Also calculate EUR price for payment processing - keep this logic
   const eurPrice = convertCurrency(totalPrice, 'USD', 'EUR');
   
   useEffect(() => {
@@ -135,10 +129,7 @@ const Checkout = () => {
     }));
   };
 
-  const handleCurrencyChange = (value: string) => {
-    if (generalError) setGeneralError(null);
-    setSelectedCurrency(value);
-  };
+  // Remove the handleCurrencyChange function as we don't need it anymore
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -494,30 +485,6 @@ const Checkout = () => {
                         ZIP/Postal Code
                       </label>
                       <Input id="zip" name="zip" value={formData.zip} onChange={handleInputChange} placeholder="SW1A 1AA" />
-                    </div>
-                    
-                    <div>
-                      <label htmlFor="currency" className="block text-sm font-medium text-gray-700 mb-1">
-                        Currency
-                      </label>
-                      <Select 
-                        value={selectedCurrency} 
-                        onValueChange={handleCurrencyChange}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Select Currency" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {supportedCurrencies.map((currency) => (
-                            <SelectItem key={currency.code} value={currency.code}>
-                              {currency.code} ({currency.symbol}) - {currency.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <p className="mt-1 text-xs text-gray-500">
-                        Select your preferred payment currency
-                      </p>
                     </div>
                     
                     <div className="md:col-span-3">
