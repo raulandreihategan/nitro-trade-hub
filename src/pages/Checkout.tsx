@@ -60,7 +60,10 @@ const Checkout = () => {
   // Calculate price in selected currency
   const convertedTotalPrice = convertCurrency(totalPrice, 'USD', selectedCurrency);
   const formattedPrice = formatCurrency(convertedTotalPrice, selectedCurrency);
-
+  
+  // Also calculate EUR price for payment processing
+  const eurPrice = convertCurrency(totalPrice, 'USD', 'EUR');
+  
   useEffect(() => {
     const getCurrentUser = async () => {
       const {
@@ -230,12 +233,11 @@ const Checkout = () => {
       const result = await PaymentService.createOrder({
         Orders: {
           terminal_id: 1439,
-          amount: selectedCurrency !== 'USD' 
-            ? convertCurrency(convertedTotalPrice, selectedCurrency, 'USD').toString()
-            : order.total_amount.toString(),
+          // Always send the EUR amount to the payment gateway
+          amount: eurPrice.toString(),
           lang: 2,
           merchant_order_description: orderDescription,
-          currency: selectedCurrency // Add currency information
+          currency: 'EUR' // Always set currency to EUR
         },
         Customers: {
           client_name: formData.clientName,
