@@ -583,7 +583,7 @@ const Checkout = () => {
                     Your payment information will be processed securely on the payment page.
                     {selectedCurrency !== 'USD' && (
                       <span className="block mt-1">
-                        Currency conversion is provided for your convenience. The final charge may vary slightly due to exchange rate fluctuations.
+                        Currency conversion is provided for your convenience. Payments will be processed in EUR.
                       </span>
                     )}
                   </p>

@@ -7,10 +7,6 @@
 export const supportedCurrencies = [
   { code: 'USD', symbol: '$', name: 'US Dollar' },
   { code: 'EUR', symbol: '€', name: 'Euro' },
-  { code: 'GBP', symbol: '£', name: 'British Pound' },
-  { code: 'JPY', symbol: '¥', name: 'Japanese Yen' },
-  { code: 'CAD', symbol: 'C$', name: 'Canadian Dollar' },
-  { code: 'AUD', symbol: 'A$', name: 'Australian Dollar' },
 ];
 
 // Get currency symbol from currency code
@@ -20,14 +16,9 @@ export const getCurrencySymbol = (currencyCode: string): string => {
 };
 
 // Exchange rates against USD (base currency)
-// These would ideally come from an API, but for now we'll use static rates
 export const exchangeRates = {
   USD: 1,
   EUR: 0.92,
-  GBP: 0.79,
-  JPY: 150.23,
-  CAD: 1.38,
-  AUD: 1.52,
 };
 
 /**

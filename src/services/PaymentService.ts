@@ -95,26 +95,33 @@ export class PaymentService {
         console.log('Converted lang to string:', orderData.Orders.lang);
       }
 
-      // Always convert amount to EUR regardless of the selected currency
+      // Handle currency - always send EUR to the payment API
       const originalAmount = parseFloat(orderData.Orders.amount);
       const originalCurrency = orderData.Orders.currency || 'USD';
       
-      // Convert to EUR for payment processing
-      const convertedAmount = convertCurrency(originalAmount, originalCurrency, 'EUR');
-      console.log(`Currency conversion: ${originalAmount} ${originalCurrency} => ${convertedAmount} EUR`);
-      
-      // Update the amount with the converted value
-      orderData.Orders.amount = convertedAmount.toString();
-      
-      // Store original currency and amount in the description for reference
-      const currencyInfo = `(Original: ${originalAmount} ${originalCurrency})`;
-      if (orderData.Orders.merchant_order_description) {
-        orderData.Orders.merchant_order_description += ` ${currencyInfo}`;
+      // If the original currency is not EUR, convert it
+      let finalAmount = originalAmount;
+      if (originalCurrency !== 'EUR') {
+        finalAmount = convertCurrency(originalAmount, originalCurrency, 'EUR');
+        console.log(`Currency conversion: ${originalAmount} ${originalCurrency} => ${finalAmount} EUR`);
       } else {
-        orderData.Orders.merchant_order_description = `Order ${currencyInfo}`;
+        console.log(`Original currency is EUR, no conversion needed: ${originalAmount} EUR`);
       }
       
-      // Set the currency to EUR
+      // Update the amount with the final value
+      orderData.Orders.amount = finalAmount.toString();
+      
+      // Add original currency info to the description if needed
+      if (originalCurrency !== 'EUR') {
+        const currencyInfo = `(Original: ${originalAmount} ${originalCurrency})`;
+        if (orderData.Orders.merchant_order_description) {
+          orderData.Orders.merchant_order_description += ` ${currencyInfo}`;
+        } else {
+          orderData.Orders.merchant_order_description = `Order ${currencyInfo}`;
+        }
+      }
+      
+      // Always set the currency to EUR for the payment API
       orderData.Orders.currency = 'EUR';
 
       // Generate a merchant_order_id if not provided

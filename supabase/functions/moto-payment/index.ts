@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -127,14 +128,14 @@ class RealistoService {
       orderData.Orders.terminal_id = 1439;
       console.log("Set terminal_id to 1439");
       
-      // Ensure currency is always EUR
-      if (orderData.Orders.currency !== 'EUR') {
-        console.log(`Converting currency from ${orderData.Orders.currency} to EUR`);
-        orderData.Orders.currency = 'EUR';
+      // Remove currency field to avoid API errors
+      if (orderData.Orders.currency) {
+        console.log("Removing currency field from Orders to prevent API errors");
+        delete orderData.Orders.currency;
       }
       
       // Log original currency if present
-      if (orderData.Orders.originalCurrency && orderData.Orders.originalCurrency !== 'EUR') {
+      if (orderData.Orders.originalCurrency) {
         console.log(`Original currency: ${orderData.Orders.originalCurrency}, Original amount: ${orderData.Orders.originalAmount}`);
       }
       
