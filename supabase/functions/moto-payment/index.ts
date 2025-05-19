@@ -123,10 +123,10 @@ class RealistoService {
       }
     }
 
-    // Always ensure terminal_id is 88
+    // Always ensure terminal_id is 1439
     if (orderData.Orders) {
-      orderData.Orders.terminal_id = 88;
-      console.log("Set terminal_id to 88");
+      orderData.Orders.terminal_id = 1439;
+      console.log("Set terminal_id to 1439");
       
       // Convert lang to string if it's a number
       if (typeof orderData.Orders.lang === 'number') {

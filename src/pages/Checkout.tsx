@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Header from '@/components/layout/Header';
@@ -200,7 +199,7 @@ const Checkout = () => {
 
       const result = await PaymentService.createOrder({
         Orders: {
-          terminal_id: 88,
+          terminal_id: 1439,
           amount: order.total_amount.toString(),
           lang: 2,
           merchant_order_description: orderDescription

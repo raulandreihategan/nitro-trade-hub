@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { cleanCustomerData, validateCountryFormat, formatPhoneNumber, generateMerchantOrderId } from "@/utils/paymentValidation";
 import { prepareOrderPayload, extractPaymentUrl } from "@/utils/paymentTransform";
@@ -82,9 +83,9 @@ export class PaymentService {
         address?: string;
       };
 
-      // Always set terminal ID to 88
-      orderData.Orders.terminal_id = 88;
-      console.log('Set terminal_id to 88');
+      // Always set terminal ID to 1439
+      orderData.Orders.terminal_id = 1439;
+      console.log('Set terminal_id to 1439');
 
       // Convert lang to string
       if (typeof orderData.Orders.lang === 'number') {
