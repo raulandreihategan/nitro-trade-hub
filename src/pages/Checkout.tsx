@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Header from '@/components/layout/Header';
@@ -22,7 +21,8 @@ import {
 import { 
   supportedCurrencies, 
   convertCurrency, 
-  formatCurrency 
+  formatCurrency,
+  exchangeRates
 } from "@/utils/currencyConverter";
 
 const Checkout = () => {
