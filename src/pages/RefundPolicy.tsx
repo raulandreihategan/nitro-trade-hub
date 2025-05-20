@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
@@ -133,7 +132,7 @@ const RefundPolicy = () => {
               <div className="bg-white p-6 md:p-8 rounded-xl shadow-glossy">
                 <h2 className="text-xl font-semibold text-gray-900 mb-4">Contact Us</h2>
                 <p className="text-gray-600 mb-4">If you have any questions about our Refund Policy, please contact us at:</p>
-                <p className="font-medium">support@nitroleague.com</p>
+                <p className="font-medium">info@nitrogames.es</p>
               </div>
             </div>
           </div>
