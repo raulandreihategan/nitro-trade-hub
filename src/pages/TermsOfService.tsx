@@ -27,7 +27,7 @@ const TermsOfService = () => {
               
               <div className="bg-white p-6 md:p-8 rounded-xl shadow-glossy mb-8">
                 <h2 className="text-xl font-semibold text-gray-900 mb-4">1. Acceptance of Terms</h2>
-                <p className="mb-4">By accessing or using the NitroLeague services, you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our services.</p>
+                <p className="mb-4">By accessing or using the Nitrogames services, you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our services.</p>
                 <p>These Terms of Service apply to all visitors, users, and others who access or use our services. By accessing or using the service you agree to be bound by these Terms. If you disagree with any part of the terms, then you may not access the service.</p>
               </div>
               
@@ -86,13 +86,13 @@ const TermsOfService = () => {
               
               <div className="bg-white p-6 md:p-8 rounded-xl shadow-glossy mb-8">
                 <h2 className="text-xl font-semibold text-gray-900 mb-4">8. Intellectual Property</h2>
-                <p className="mb-4">The Service and its original content, features, and functionality are and will remain the exclusive property of NitroLeague and its licensors. The Service is protected by copyright, trademark, and other laws.</p>
-                <p>Our trademarks and trade dress may not be used in connection with any product or service without the prior written consent of NitroLeague.</p>
+                <p className="mb-4">The Service and its original content, features, and functionality are and will remain the exclusive property of Nitrogames, INFOATLANTIC ADVISORY S.L, and its licensors. The Service is protected by copyright, trademark, and other laws.</p>
+                <p>Our trademarks and trade dress may not be used in connection with any product or service without the prior written consent of INFOATLANTIC ADVISORY S.L.</p>
               </div>
               
               <div className="bg-white p-6 md:p-8 rounded-xl shadow-glossy mb-8">
                 <h2 className="text-xl font-semibold text-gray-900 mb-4">9. Limitation of Liability</h2>
-                <p className="mb-4">In no event shall NitroLeague, nor its directors, employees, partners, agents, suppliers, or affiliates, be liable for any indirect, incidental, special, consequential or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses, resulting from:</p>
+                <p className="mb-4">In no event shall Nitrogames, INFOATLANTIC ADVISORY S.L, nor its directors, employees, partners, agents, suppliers, or affiliates, be liable for any indirect, incidental, special, consequential or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses, resulting from:</p>
                 <ul className="list-disc pl-6 mb-4">
                   <li>Your access to or use of or inability to access or use the service</li>
                   <li>Any conduct or content of any third party on the service</li>
@@ -111,7 +111,7 @@ const TermsOfService = () => {
               <div className="bg-white p-6 md:p-8 rounded-xl shadow-glossy">
                 <h2 className="text-xl font-semibold text-gray-900 mb-4">11. Contact Us</h2>
                 <p>If you have any questions about these Terms, please contact us at:</p>
-                <p className="font-medium">support@nitroleague.com</p>
+                <p className="font-medium">info@nitrogames.es</p>
               </div>
             </div>
           </div>

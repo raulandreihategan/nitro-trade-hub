@@ -141,7 +141,7 @@ const Footer = () => {
         {/* Copyright */}
         <div className="border-t border-gray-200 pt-8 flex flex-col md:flex-row justify-between items-center">
           <p className="text-xs text-gray-500">
-            &copy; {new Date().getFullYear()} Nitro Games. All rights reserved.
+            &copy; {new Date().getFullYear()} Nitrogames. All rights reserved to INFOATLANTIC ADVISORY S.L with CIF: B21813571.
           </p>
           <p className="text-xs text-gray-500 mt-2 md:mt-0">
             Designed with precision and care for the gaming community.

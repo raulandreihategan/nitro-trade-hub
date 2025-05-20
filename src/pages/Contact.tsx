@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
@@ -72,8 +73,7 @@ const Contact = () => {
                       <Mail className="h-6 w-6 text-nitro-500 mt-0.5 mr-4" />
                       <div>
                         <h3 className="font-medium text-gray-900">Email</h3>
-                        <p className="text-gray-600 mt-1">support@nitrogames.es</p>
-                        <p className="text-gray-600">sales@nitrogames.es</p>
+                        <p className="text-gray-600 mt-1">info@nitrogames.es</p>
                       </div>
                     </div>
                     
