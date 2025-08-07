@@ -10,7 +10,7 @@ import { useCart } from '@/contexts/CartContext';
 import { supabase } from "@/integrations/supabase/client";
 
 // Updated services with detailed game-specific information
-const services = [
+const fallbackServices = [
   // League of Legends Services
   {
     id: "lol-boost-1",
@@ -778,11 +778,11 @@ const services = [
 
 const ServiceDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const [service, setService] = useState(services.find(s => s.id === id));
-  const [selectedOption, setSelectedOption] = useState(service?.options[0]);
+  const [service, setService] = useState<any>(undefined);
+  const [selectedOption, setSelectedOption] = useState<any>(undefined);
   const [showReviews, setShowReviews] = useState(false);
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
-  const [mainImage, setMainImage] = useState(service?.image);
+  const [mainImage, setMainImage] = useState<string | undefined>(undefined);
   const { toast } = useToast();
   const { addItem } = useCart();
   const navigate = useNavigate();
@@ -808,7 +808,61 @@ const ServiceDetail = () => {
   }, []);
 
   useEffect(() => {
-    setService(services.find(s => s.id === id));
+    const load = async () => {
+      if (!id) return;
+      try {
+        const { data: svc, error } = await supabase
+          .from('services')
+          .select('*')
+          .eq('id', id)
+          .maybeSingle();
+        if (error) throw error;
+
+        if (svc) {
+          const [imagesRes, featuresRes, faqsRes, optionsRes] = await Promise.all([
+            supabase.from('service_images').select('*').eq('service_id', id).order('sort_order', { ascending: true }),
+            supabase.from('service_features').select('*').eq('service_id', id).order('sort_order', { ascending: true }),
+            supabase.from('service_faqs').select('*').eq('service_id', id).order('sort_order', { ascending: true }),
+            supabase.from('service_options').select('*').eq('service_id', id).order('sort_order', { ascending: true }),
+          ]);
+
+          const gallery = (imagesRes.data?.map((i: any) => i.image_url) ?? []);
+          const composed: any = {
+            id: svc.id,
+            title: svc.title,
+            description: svc.description,
+            fullDescription: svc.description,
+            image: svc.image,
+            gallery: gallery.length ? gallery : [svc.image].filter(Boolean),
+            rating: Number(svc.rating ?? 5),
+            reviews: 0,
+            price: Number(svc.base_price ?? 0),
+            category: svc.category,
+            game: svc.game,
+            timeEstimate: undefined,
+            features: (featuresRes.data ?? []).map((f: any) => f.feature),
+            options: (optionsRes.data ?? []).map((o: any) => ({
+              id: o.option_id,
+              name: o.name,
+              description: o.delivery_time || '',
+              price: Number(o.price),
+              highlighted: o.highlighted,
+              bestValue: o.best_value,
+            })),
+            faqs: (faqsRes.data ?? []).map((f: any) => ({ question: f.question, answer: f.answer })),
+          };
+
+          setService(composed);
+        } else {
+          const fb = (fallbackServices as any[]).find((s) => s.id === id);
+          setService(fb);
+        }
+      } catch (err) {
+        const fb = (fallbackServices as any[]).find((s) => s.id === id);
+        setService(fb);
+      }
+    };
+    load();
   }, [id]);
 
   useEffect(() => {

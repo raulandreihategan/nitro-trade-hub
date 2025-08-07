@@ -1,9 +1,10 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import ServiceCard from '../ui/ServiceCard';
 import { ChevronRight } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 // Updated service data focused on specific games and realistic gaming services
 const services = [
@@ -50,6 +51,31 @@ const services = [
 ];
 
 const ServicesSection: React.FC = () => {
+  const [items, setItems] = useState(services);
+
+  useEffect(() => {
+    const load = async () => {
+      const { data, error } = await supabase
+        .from('services')
+        .select('*')
+        .order('updated_at', { ascending: false })
+        .limit(4);
+      if (!error && data && data.length) {
+        setItems(data.map((svc: any) => ({
+          id: svc.id,
+          title: svc.title,
+          description: svc.description,
+          image: svc.image,
+          rating: Number(svc.rating ?? 5),
+          price: Number(svc.base_price ?? 0),
+          category: svc.category,
+          game: svc.game,
+        })));
+      }
+    };
+    load();
+  }, []);
+
   return (
     <div className="bg-white py-20">
       <div className="container mx-auto px-4 md:px-6">

@@ -7,6 +7,7 @@ import ServiceCard from '@/components/ui/ServiceCard';
 import { Button } from '@/components/ui/button';
 import { Search, Filter, ChevronDown } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 // Updated game-specific categories
 const categories = [
@@ -205,6 +206,7 @@ const Services = () => {
   const [selectedCategory, setSelectedCategory] = useState("All Categories");
   const [selectedGame, setSelectedGame] = useState("All Games");
   const [searchQuery, setSearchQuery] = useState("");
+  const [allServices, setAllServices] = useState(services);
   const [filteredServices, setFilteredServices] = useState(services);
   const { toast } = useToast();
   const location = useLocation();
@@ -218,9 +220,30 @@ const Services = () => {
     }
   }, [location.search]);
 
+  // Load services from database (fallback to static list if empty)
+  useEffect(() => {
+    const load = async () => {
+      const { data, error } = await supabase.from('services').select('*');
+      if (!error && data && data.length > 0) {
+        const mapped = data.map((svc: any) => ({
+          id: svc.id,
+          title: svc.title,
+          description: svc.description,
+          image: svc.image,
+          rating: Number(svc.rating ?? 5),
+          price: Number(svc.base_price ?? 0),
+          category: svc.category,
+          game: svc.game,
+        }));
+        setAllServices(mapped);
+      }
+    };
+    load();
+  }, []);
+
   // Filter services based on selection
   useEffect(() => {
-    let filtered = services;
+    let filtered = allServices;
     
     if (selectedCategory !== "All Categories") {
       filtered = filtered.filter(service => service.category === selectedCategory);
@@ -240,7 +263,7 @@ const Services = () => {
     }
     
     setFilteredServices(filtered);
-  }, [selectedCategory, selectedGame, searchQuery]);
+  }, [selectedCategory, selectedGame, searchQuery, allServices]);
 
   // Scroll to top on component mount
   useEffect(() => {
@@ -248,7 +271,7 @@ const Services = () => {
   }, []);
 
   const handleAddToCart = (serviceId: string) => {
-    const service = services.find(s => s.id === serviceId);
+    const service = allServices.find(s => s.id === serviceId);
     
     toast({
       title: "Added to cart",
