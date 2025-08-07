@@ -70,6 +70,7 @@ const Header = () => {
   const menuItems = [
     { name: 'Home', path: '/' },
     { name: 'Services', path: '/services' },
+    { name: 'Gift Cards', path: '/services?category=Gift Cards' },
     { name: 'About', path: '/about' },
     { name: 'Contact', path: '/contact' }
   ];

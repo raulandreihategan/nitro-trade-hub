@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import ServiceCard from '@/components/ui/ServiceCard';
@@ -17,7 +18,8 @@ const categories = [
   "Power Leveling",
   "Achievements",
   "Accounts",
-  "Duo Queue"
+  "Duo Queue",
+  "Gift Cards"
 ];
 
 // Updated games list with popular titles
@@ -164,6 +166,38 @@ const services = [
     price: 39.99,
     category: "Boosting",
     game: "World of Warcraft"
+  },
+  
+  // Gift Cards
+  {
+    id: "turbobit-gift",
+    title: "Turbobit Gift Card",
+    description: "Digital gift card for Turbobit premium services and downloads. Perfect for file sharing enthusiasts.",
+    image: "https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&q=80&w=1470&ixlib=rb-4.0.3",
+    rating: 4.8,
+    price: 25.00,
+    category: "Gift Cards",
+    game: "All Games"
+  },
+  {
+    id: "central-coast-gift",
+    title: "Central Coast Gift Card",
+    description: "Redeemable gift card for Central Coast gaming services and premium features. Ideal for gamers.",
+    image: "https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?auto=format&fit=crop&q=80&w=1470&ixlib=rb-4.0.3",
+    rating: 4.9,
+    price: 50.00,
+    category: "Gift Cards",
+    game: "All Games"
+  },
+  {
+    id: "arsmate-gift",
+    title: "Arsmate Gift Card",
+    description: "Digital voucher for Arsmate platform services and exclusive content access. Great for content creators.",
+    image: "https://images.unsplash.com/photo-1607083206968-13611e3d76db?auto=format&fit=crop&q=80&w=1470&ixlib=rb-4.0.3",
+    rating: 4.7,
+    price: 35.00,
+    category: "Gift Cards",
+    game: "All Games"
   }
 ];
 
@@ -173,6 +207,16 @@ const Services = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredServices, setFilteredServices] = useState(services);
   const { toast } = useToast();
+  const location = useLocation();
+
+  // Handle URL parameters for filtering (e.g., from header menu)
+  useEffect(() => {
+    const urlParams = new URLSearchParams(location.search);
+    const categoryParam = urlParams.get('category');
+    if (categoryParam && categories.includes(categoryParam)) {
+      setSelectedCategory(categoryParam);
+    }
+  }, [location.search]);
 
   // Filter services based on selection
   useEffect(() => {
