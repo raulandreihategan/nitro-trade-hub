@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instanciate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "12.2.3 (519615d)"
+    PostgrestVersion: "12.2.12 (cd3cf9e)"
   }
   public: {
     Tables: {
@@ -115,6 +115,179 @@ export type Database = {
           total_amount?: number
           updated_at?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      service_faqs: {
+        Row: {
+          answer: string
+          id: string
+          question: string
+          service_id: string
+          sort_order: number
+        }
+        Insert: {
+          answer: string
+          id?: string
+          question: string
+          service_id: string
+          sort_order?: number
+        }
+        Update: {
+          answer?: string
+          id?: string
+          question?: string
+          service_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_faqs_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_features: {
+        Row: {
+          feature: string
+          id: string
+          service_id: string
+          sort_order: number
+        }
+        Insert: {
+          feature: string
+          id?: string
+          service_id: string
+          sort_order?: number
+        }
+        Update: {
+          feature?: string
+          id?: string
+          service_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_features_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_images: {
+        Row: {
+          id: string
+          image_url: string
+          service_id: string
+          sort_order: number
+        }
+        Insert: {
+          id?: string
+          image_url: string
+          service_id: string
+          sort_order?: number
+        }
+        Update: {
+          id?: string
+          image_url?: string
+          service_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_images_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_options: {
+        Row: {
+          best_value: boolean
+          delivery_time: string | null
+          highlighted: boolean
+          id: string
+          name: string
+          option_id: string
+          price: number
+          service_id: string
+          sort_order: number
+        }
+        Insert: {
+          best_value?: boolean
+          delivery_time?: string | null
+          highlighted?: boolean
+          id?: string
+          name: string
+          option_id: string
+          price: number
+          service_id: string
+          sort_order?: number
+        }
+        Update: {
+          best_value?: boolean
+          delivery_time?: string | null
+          highlighted?: boolean
+          id?: string
+          name?: string
+          option_id?: string
+          price?: number
+          service_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_options_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      services: {
+        Row: {
+          base_price: number
+          category: string
+          created_at: string
+          description: string
+          game: string
+          id: string
+          image: string | null
+          rating: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          base_price?: number
+          category: string
+          created_at?: string
+          description: string
+          game: string
+          id: string
+          image?: string | null
+          rating?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          base_price?: number
+          category?: string
+          created_at?: string
+          description?: string
+          game?: string
+          id?: string
+          image?: string | null
+          rating?: number
+          title?: string
+          updated_at?: string
         }
         Relationships: []
       }
