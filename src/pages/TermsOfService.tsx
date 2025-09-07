@@ -108,8 +108,19 @@ const TermsOfService = () => {
                 <p>It is your responsibility to review these Terms periodically for changes. Your continued use of our Service following the posting of revised Terms means that you accept and agree to the changes.</p>
               </div>
               
+              <div className="bg-white p-6 md:p-8 rounded-xl shadow-glossy mb-8">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">11. Business Relations</h2>
+                <p className="mb-4">Nitrogames maintains business relationships with the following companies:</p>
+                <ul className="list-disc pl-6 space-y-2">
+                  <li><span className="font-medium">AirSharp LLC</span> - Business partner</li>
+                  <li><span className="font-medium">Center Coast SRO</span> - Business partner</li>
+                  <li><span className="font-medium">Pantec SPA</span> - Business partner</li>
+                </ul>
+                <p className="mt-4 text-sm text-gray-600">These business relationships may involve affiliate partnerships, service provisions, or other commercial arrangements that support our platform and services.</p>
+              </div>
+              
               <div className="bg-white p-6 md:p-8 rounded-xl shadow-glossy">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">11. Contact Us</h2>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">12. Contact Us</h2>
                 <p>If you have any questions about these Terms, please contact us at:</p>
                 <p className="font-medium">info@nitrogames.es</p>
               </div>
