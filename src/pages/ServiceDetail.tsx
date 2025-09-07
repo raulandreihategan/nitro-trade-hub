@@ -827,6 +827,33 @@ const ServiceDetail = () => {
           ]);
 
           const gallery = (imagesRes.data?.map((i: any) => i.image_url) ?? []);
+          
+          // Check if this is a custom gift card and get amount from URL
+          const urlParams = new URLSearchParams(window.location.search);
+          const customAmount = urlParams.get('amount');
+          
+          let options = (optionsRes.data ?? []).map((o: any) => ({
+            id: o.option_id,
+            name: o.name,
+            description: o.delivery_time || '',
+            price: Number(o.price),
+            highlighted: o.highlighted,
+            bestValue: o.best_value,
+          }));
+          
+          // If it's a custom gift card and amount is provided, create a custom option
+          if (id === 'custom-gift' && customAmount && parseFloat(customAmount) > 0) {
+            const amount = parseFloat(customAmount);
+            options = [{
+              id: 'custom-amount',
+              name: `Custom Amount - $${amount.toFixed(2)}`,
+              description: 'Custom gift card amount',
+              price: amount,
+              highlighted: true,
+              bestValue: false,
+            }];
+          }
+
           const composed: any = {
             id: svc.id,
             title: svc.title,
@@ -839,16 +866,9 @@ const ServiceDetail = () => {
             price: Number(svc.base_price ?? 0),
             category: svc.category,
             game: svc.game,
-            timeEstimate: undefined,
+            timeEstimate: 'Instant delivery',
             features: (featuresRes.data ?? []).map((f: any) => f.feature),
-            options: (optionsRes.data ?? []).map((o: any) => ({
-              id: o.option_id,
-              name: o.name,
-              description: o.delivery_time || '',
-              price: Number(o.price),
-              highlighted: o.highlighted,
-              bestValue: o.best_value,
-            })),
+            options,
             faqs: (faqsRes.data ?? []).map((f: any) => ({ question: f.question, answer: f.answer })),
           };
 

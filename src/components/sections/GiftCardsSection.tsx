@@ -16,15 +16,6 @@ const giftCards = [
     category: "Gift Cards"
   },
   {
-    id: "central-coast-gift",
-    title: "Central Coast Gift Card",
-    description: "Redeemable gift card for Central Coast gaming services and premium features. Ideal for gamers.",
-    image: "https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?auto=format&fit=crop&q=80&w=1470&ixlib=rb-4.0.3",
-    rating: 4.9,
-    price: 50.00,
-    category: "Gift Cards"
-  },
-  {
     id: "arsmate-gift",
     title: "Arsmate Gift Card",
     description: "Digital voucher for Arsmate platform services and exclusive content access. Great for content creators.",
