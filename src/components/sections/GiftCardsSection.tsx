@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import ServiceCard from '../ui/ServiceCard';
+import CustomGiftCard from '../ui/CustomGiftCard';
 import { ChevronRight, Gift } from 'lucide-react';
 
 const giftCards = [
@@ -31,6 +32,16 @@ const giftCards = [
     rating: 4.7,
     price: 35.00,
     category: "Gift Cards"
+  },
+  {
+    id: "custom-gift",
+    title: "Custom Amount Gift Card",
+    description: "Choose your own amount for the perfect gift. No minimum required - perfect for any occasion.",
+    image: "https://images.unsplash.com/photo-1563013544-824ae1b704d3?auto=format&fit=crop&q=80&w=1470&ixlib=rb-4.0.3",
+    rating: 5.0,
+    price: 0,
+    category: "Gift Cards",
+    isCustom: true
   }
 ];
 
@@ -55,16 +66,28 @@ const GiftCardsSection: React.FC = () => {
         {/* Gift cards grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12 max-w-6xl mx-auto">
           {giftCards.map((giftCard) => (
-            <ServiceCard
-              key={giftCard.id}
-              id={giftCard.id}
-              title={giftCard.title}
-              description={giftCard.description}
-              image={giftCard.image}
-              rating={giftCard.rating}
-              price={giftCard.price}
-              category={giftCard.category}
-            />
+            giftCard.isCustom ? (
+              <CustomGiftCard
+                key={giftCard.id}
+                id={giftCard.id}
+                title={giftCard.title}
+                description={giftCard.description}
+                image={giftCard.image}
+                rating={giftCard.rating}
+                category={giftCard.category}
+              />
+            ) : (
+              <ServiceCard
+                key={giftCard.id}
+                id={giftCard.id}
+                title={giftCard.title}
+                description={giftCard.description}
+                image={giftCard.image}
+                rating={giftCard.rating}
+                price={giftCard.price}
+                category={giftCard.category}
+              />
+            )
           ))}
         </div>
         
