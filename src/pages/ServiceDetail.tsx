@@ -4,6 +4,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Star, ShoppingCart, Clock, Shield, Trophy, Check, ChevronDown, ChevronUp } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from '@/contexts/CartContext';
@@ -787,6 +788,7 @@ const ServiceDetail = () => {
   const { addItem } = useCart();
   const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [customAmount, setCustomAmount] = useState('');
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -830,7 +832,7 @@ const ServiceDetail = () => {
           
           // Check if this is a custom gift card and get amount from URL
           const urlParams = new URLSearchParams(window.location.search);
-          const customAmount = urlParams.get('amount');
+          const urlAmount = urlParams.get('amount');
           
           let options = (optionsRes.data ?? []).map((o: any) => ({
             id: o.option_id,
@@ -841,17 +843,12 @@ const ServiceDetail = () => {
             bestValue: o.best_value,
           }));
           
-          // If it's a custom gift card and amount is provided, create a custom option
-          if (id === 'custom-gift' && customAmount && parseFloat(customAmount) > 0) {
-            const amount = parseFloat(customAmount);
-            options = [{
-              id: 'custom-amount',
-              name: `Custom Amount - $${amount.toFixed(2)}`,
-              description: 'Custom gift card amount',
-              price: amount,
-              highlighted: true,
-              bestValue: false,
-            }];
+          // If it's a custom gift card, we'll handle the custom amount separately
+          if (id === 'custom-gift') {
+            if (urlAmount && parseFloat(urlAmount) > 0) {
+              setCustomAmount(urlAmount);
+            }
+            // Keep the default options for custom gift card as fallback
           }
 
           const composed: any = {
@@ -892,6 +889,30 @@ const ServiceDetail = () => {
     }
   }, [service]);
 
+  const handleCustomAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Only allow numbers and one decimal point
+    if (/^\d*\.?\d*$/.test(value)) {
+      setCustomAmount(value);
+    }
+  };
+
+  const getCurrentPrice = () => {
+    if (service?.id === 'custom-gift' && customAmount) {
+      const amount = parseFloat(customAmount);
+      return amount > 0 ? amount : 0;
+    }
+    return selectedOption?.price || 0;
+  };
+
+  const getCurrentOptionName = () => {
+    if (service?.id === 'custom-gift' && customAmount) {
+      const amount = parseFloat(customAmount);
+      return amount > 0 ? `Custom Amount - $${amount.toFixed(2)}` : 'Enter Amount';
+    }
+    return selectedOption?.name || '';
+  };
+
   const handleAddToCart = async () => {
     if (!isLoggedIn) {
       toast({
@@ -903,14 +924,35 @@ const ServiceDetail = () => {
       return;
     }
 
-    if (service && selectedOption) {
-      await addItem({
-        service_id: service.id,
-        service_title: service.title,
-        option_id: selectedOption.id,
-        option_name: selectedOption.name,
-        price: selectedOption.price
-      });
+    if (service) {
+      // For custom gift card, use the custom amount if provided
+      if (service.id === 'custom-gift' && customAmount) {
+        const amount = parseFloat(customAmount);
+        if (amount <= 0) {
+          toast({
+            title: 'Invalid amount',
+            description: 'Please enter a valid amount greater than $0.',
+            variant: 'destructive',
+          });
+          return;
+        }
+        
+        await addItem({
+          service_id: service.id,
+          service_title: service.title,
+          option_id: 'custom-amount',
+          option_name: `Custom Amount - $${amount.toFixed(2)}`,
+          price: amount
+        });
+      } else if (selectedOption) {
+        await addItem({
+          service_id: service.id,
+          service_title: service.title,
+          option_id: selectedOption.id,
+          option_name: selectedOption.name,
+          price: selectedOption.price
+        });
+      }
     }
   };
 
@@ -1018,39 +1060,90 @@ const ServiceDetail = () => {
                     </div>
                     
                     <div className="mb-6">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Select Package</h3>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                        {service.id === 'custom-gift' ? 'Enter Custom Amount' : 'Select Package'}
+                      </h3>
                       
-                      <div className="space-y-3">
-                        {service.options.map((option) => (
-                          <div
-                            key={option.id}
-                            className={`border rounded-lg p-4 cursor-pointer transition-all ${
-                              selectedOption?.id === option.id
-                                ? 'border-nitro-500 bg-nitro-50'
-                                : 'border-gray-200 hover:border-nitro-200'
-                            }`}
-                            onClick={() => setSelectedOption(option)}
-                          >
-                            <div className="flex items-start">
-                              <div className="flex-1">
-                                <h4 className="font-medium text-gray-900">{option.name}</h4>
-                                <p className="text-sm text-gray-600">{option.description}</p>
-                              </div>
-                              <div className="text-right">
-                                <p className="text-lg font-bold text-gray-900">${option.price.toFixed(2)}</p>
+                      {service.id === 'custom-gift' ? (
+                        <div className="space-y-4">
+                          <div>
+                            <label htmlFor="custom-amount" className="block text-sm font-medium text-gray-700 mb-2">
+                              Gift Card Amount ($)
+                            </label>
+                            <Input
+                              id="custom-amount"
+                              type="text"
+                              placeholder="Enter amount (e.g., 75.50)"
+                              value={customAmount}
+                              onChange={handleCustomAmountChange}
+                              className="w-full text-lg"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">No minimum amount required</p>
+                          </div>
+                          
+                          {customAmount && parseFloat(customAmount) > 0 && (
+                            <div className="bg-nitro-50 border border-nitro-200 rounded-lg p-4">
+                              <div className="flex justify-between items-center">
+                                <div>
+                                  <h4 className="font-medium text-gray-900">{getCurrentOptionName()}</h4>
+                                  <p className="text-sm text-gray-600">Custom gift card amount</p>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-xl font-bold text-gray-900">${getCurrentPrice().toFixed(2)}</p>
+                                </div>
                               </div>
                             </div>
+                          )}
+                          
+                          <div className="text-sm text-gray-600">
+                            <p className="font-medium mb-2">Quick amount suggestions:</p>
+                            <div className="flex flex-wrap gap-2">
+                              {[10, 25, 50, 100].map((amount) => (
+                                <button
+                                  key={amount}
+                                  onClick={() => setCustomAmount(amount.toString())}
+                                  className="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-md text-sm transition-colors"
+                                >
+                                  ${amount}
+                                </button>
+                              ))}
+                            </div>
                           </div>
-                        ))}
-                      </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {service.options.map((option) => (
+                            <div
+                              key={option.id}
+                              className={`border rounded-lg p-4 cursor-pointer transition-all ${
+                                selectedOption?.id === option.id
+                                  ? 'border-nitro-500 bg-nitro-50'
+                                  : 'border-gray-200 hover:border-nitro-200'
+                              }`}
+                              onClick={() => setSelectedOption(option)}
+                            >
+                              <div className="flex items-start">
+                                <div className="flex-1">
+                                  <h4 className="font-medium text-gray-900">{option.name}</h4>
+                                  <p className="text-sm text-gray-600">{option.description}</p>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-lg font-bold text-gray-900">${option.price.toFixed(2)}</p>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                     
                     <Button
                       className="w-full flex items-center justify-center text-base btn-primary"
                       onClick={handleAddToCart}
+                      disabled={service.id === 'custom-gift' && (!customAmount || parseFloat(customAmount) <= 0)}
                     >
                       <ShoppingCart className="mr-2 h-5 w-5" />
-                      Add to Cart
+                      Add to Cart - ${getCurrentPrice().toFixed(2)}
                     </Button>
                   </div>
                 </div>
