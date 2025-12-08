@@ -218,6 +218,7 @@ export type Database = {
         Row: {
           best_value: boolean
           delivery_time: string | null
+          description: string | null
           highlighted: boolean
           id: string
           name: string
@@ -229,6 +230,7 @@ export type Database = {
         Insert: {
           best_value?: boolean
           delivery_time?: string | null
+          description?: string | null
           highlighted?: boolean
           id?: string
           name: string
@@ -240,6 +242,7 @@ export type Database = {
         Update: {
           best_value?: boolean
           delivery_time?: string | null
+          description?: string | null
           highlighted?: boolean
           id?: string
           name?: string
@@ -264,10 +267,13 @@ export type Database = {
           category: string
           created_at: string
           description: string
+          full_description: string | null
           game: string
           id: string
           image: string | null
           rating: number
+          reviews: number | null
+          time_estimate: string | null
           title: string
           updated_at: string
         }
@@ -276,10 +282,13 @@ export type Database = {
           category: string
           created_at?: string
           description: string
+          full_description?: string | null
           game: string
           id: string
           image?: string | null
           rating?: number
+          reviews?: number | null
+          time_estimate?: string | null
           title: string
           updated_at?: string
         }
@@ -288,10 +297,13 @@ export type Database = {
           category?: string
           created_at?: string
           description?: string
+          full_description?: string | null
           game?: string
           id?: string
           image?: string | null
           rating?: number
+          reviews?: number | null
+          time_estimate?: string | null
           title?: string
           updated_at?: string
         }
