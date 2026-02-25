@@ -20,7 +20,7 @@ const HeroSection: React.FC = () => {
             </div>
             
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-gray-900 mb-6 tracking-tight">
-              Level Up Your <span className="text-nitro-600">Gaming Experience</span>
+              Plataforma Gaming Profesional con <span className="text-nitro-600">Boosting y Coaching</span> en España
             </h1>
             
             <p className="text-lg md:text-xl text-gray-600 mb-8 leading-relaxed">
