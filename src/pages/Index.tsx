@@ -8,6 +8,7 @@ import GiftCardsSection from '@/components/sections/GiftCardsSection';
 import FeaturesSection from '@/components/sections/FeaturesSection';
 import TestimonialsSection from '@/components/sections/TestimonialsSection';
 import CTASection from '@/components/sections/CTASection';
+import SEOContentSection from '@/components/sections/SEOContentSection';
 import FeaturedService from '@/components/ui/FeaturedService';
 
 const Index = () => {
@@ -75,6 +76,9 @@ const Index = () => {
         
         {/* CTA Section */}
         <CTASection />
+        
+        {/* SEO Content Section */}
+        <SEOContentSection />
       </main>
       
       <Footer />
