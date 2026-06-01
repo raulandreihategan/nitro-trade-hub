@@ -223,7 +223,7 @@ const Checkout = () => {
 
       const result = await PaymentService.createOrder({
         Orders: {
-          terminal_id: 1439,
+          terminal_id: 1466,
           // Always send the EUR amount to the payment gateway
           amount: eurPrice.toString(),
           lang: 2,
