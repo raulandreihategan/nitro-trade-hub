@@ -65,7 +65,7 @@ const OrderSuccess = () => {
         {isLoading ? (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
             <Loader2 className="h-10 w-10 animate-spin mx-auto text-nitro-600 mb-4" />
-            <p className="text-gray-600">Cargando los detalles del pedido...</p>
+            <p className="text-gray-600">Loading order details...</p>
           </div>
         ) : (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 md:p-12 text-center">
