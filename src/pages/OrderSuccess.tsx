@@ -65,7 +65,7 @@ const OrderSuccess = () => {
         {isLoading ? (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
             <Loader2 className="h-10 w-10 animate-spin mx-auto text-nitro-600 mb-4" />
-            <p className="text-gray-600">Cargando los detalles del pedido...</p>
+            <p className="text-gray-600">Loading order details...</p>
           </div>
         ) : (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 md:p-12 text-center">
@@ -76,18 +76,18 @@ const OrderSuccess = () => {
             </div>
 
             <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
-              ¡Pago realizado con éxito!
+              Payment successful!
             </h1>
 
             <p className="text-gray-600 max-w-xl mx-auto mb-8 leading-relaxed">
-              Tu pago ha sido procesado correctamente. Enviaremos automáticamente los detalles
-              de tu pedido a tu correo electrónico en los próximos minutos. Por favor, revisa
-              también la carpeta de Spam — a veces los correos terminan allí.
+              Your payment has been processed successfully. We will automatically send your order
+              details to your email in the next few minutes. Please also check your Spam folder —
+              sometimes emails end up there.
             </p>
 
             {orderId && (
               <div className="bg-gray-50 rounded-xl p-4 mb-6 inline-block">
-                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">ID de pedido</p>
+                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Order ID</p>
                 <p className="font-mono text-sm text-gray-800">{orderId}</p>
               </div>
             )}
@@ -95,7 +95,7 @@ const OrderSuccess = () => {
             {orderDetails?.order_items?.length > 0 && (
               <div className="mb-8 text-left">
                 <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500 mb-3">
-                  Resumen del pedido
+                  Order summary
                 </h2>
                 <div className="divide-y divide-gray-100 border border-gray-100 rounded-xl overflow-hidden">
                   {orderDetails.order_items.map((item: any) => (
@@ -116,7 +116,7 @@ const OrderSuccess = () => {
             <div className="border-t border-gray-100 pt-6 mt-2">
               <p className="text-sm text-gray-500 flex items-center justify-center gap-2">
                 <Mail className="h-4 w-4" />
-                Si no recibes el correo en 4 horas, contacta con info@nitrogames.es
+                If you don't receive the email within 4 hours, contact info@nitrogames.es
               </p>
             </div>
           </div>

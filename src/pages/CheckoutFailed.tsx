@@ -33,7 +33,7 @@ const CheckoutFailed = () => {
         if (errorMessage) {
           try {
             const parsedError = JSON.parse(decodeURIComponent(errorMessage));
-            setError(parsedError.error || "Error desconocido");
+            setError(parsedError.error || "Unknown error");
             setErrorDetails(parsedError.details || null);
           } catch {
             setError(decodeURIComponent(errorMessage));
@@ -41,7 +41,7 @@ const CheckoutFailed = () => {
         }
       } catch (err: any) {
         console.error('Error fetching order details:', err);
-        setError(err.message || "No se pudieron cargar los detalles del pedido");
+        setError(err.message || "Could not load order details");
       } finally {
         setIsLoading(false);
       }
@@ -64,7 +64,7 @@ const CheckoutFailed = () => {
         {isLoading ? (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
             <Loader2 className="h-10 w-10 animate-spin mx-auto text-nitro-600 mb-4" />
-            <p className="text-gray-600">Cargando los detalles del pedido...</p>
+            <p className="text-gray-600">Loading order details...</p>
           </div>
         ) : (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 md:p-12 text-center">
@@ -75,13 +75,12 @@ const CheckoutFailed = () => {
             </div>
 
             <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
-              Pago no completado
+              Payment not completed
             </h1>
 
             <p className="text-gray-600 max-w-xl mx-auto mb-8 leading-relaxed">
-              No hemos podido procesar tu pago. Tu pedido ha sido guardado y puedes
-              intentarlo de nuevo cuando quieras. Si el problema persiste, contacta con
-              nuestro equipo de soporte.
+              We could not process your payment. Your order has been saved and you can
+              try again at any time. If the problem persists, contact our support team.
             </p>
 
             {error && (
@@ -98,11 +97,11 @@ const CheckoutFailed = () => {
 
             {orderInfo && (
               <div className="bg-gray-50 rounded-xl p-4 mb-6 inline-block text-left">
-                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">ID de pedido</p>
+                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Order ID</p>
                 <p className="font-mono text-sm text-gray-800">{orderInfo.id}</p>
                 {orderInfo.total_amount && (
                   <p className="text-sm text-gray-600 mt-2">
-                    Importe: <span className="font-medium text-gray-900">${Number(orderInfo.total_amount).toFixed(2)}</span>
+                    Amount: <span className="font-medium text-gray-900">${Number(orderInfo.total_amount).toFixed(2)}</span>
                   </p>
                 )}
               </div>
@@ -110,20 +109,20 @@ const CheckoutFailed = () => {
 
             <div className="text-left mb-8 p-4 border border-yellow-200 bg-yellow-50 rounded-xl">
               <h3 className="font-semibold text-yellow-800 mb-2 text-sm">
-                Posibles soluciones
+                Possible solutions
               </h3>
               <ul className="text-sm text-yellow-700 list-disc list-inside space-y-1">
-                <li>Verifica que los datos de tu tarjeta son correctos</li>
-                <li>Comprueba que tu tarjeta tiene fondos suficientes</li>
-                <li>Algunas tarjetas requieren verificación adicional (3D Secure)</li>
-                <li>Si el problema persiste, prueba con otro método de pago</li>
+                <li>Verify that your card details are correct</li>
+                <li>Check that your card has sufficient funds</li>
+                <li>Some cards require additional verification (3D Secure)</li>
+                <li>If the problem persists, try another payment method</li>
               </ul>
             </div>
 
             <div className="border-t border-gray-100 pt-6 mt-2">
               <p className="text-sm text-gray-500 flex items-center justify-center gap-2">
                 <Mail className="h-4 w-4" />
-                ¿Necesitas ayuda? Escríbenos a info@nitrogames.es
+                Need help? Write to us at info@nitrogames.es
               </p>
             </div>
           </div>
