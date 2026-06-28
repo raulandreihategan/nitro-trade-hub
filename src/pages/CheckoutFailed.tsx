@@ -33,7 +33,7 @@ const CheckoutFailed = () => {
         if (errorMessage) {
           try {
             const parsedError = JSON.parse(decodeURIComponent(errorMessage));
-            setError(parsedError.error || "Error desconocido");
+            setError(parsedError.error || "Unknown error");
             setErrorDetails(parsedError.details || null);
           } catch {
             setError(decodeURIComponent(errorMessage));
@@ -41,7 +41,7 @@ const CheckoutFailed = () => {
         }
       } catch (err: any) {
         console.error('Error fetching order details:', err);
-        setError(err.message || "No se pudieron cargar los detalles del pedido");
+        setError(err.message || "Could not load order details");
       } finally {
         setIsLoading(false);
       }
