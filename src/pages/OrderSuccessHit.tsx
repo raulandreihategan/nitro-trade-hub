@@ -1,0 +1,130 @@
+import React, { useEffect, useState } from 'react';
+import { useLocation, useSearchParams } from 'react-router-dom';
+import { supabase } from "@/integrations/supabase/client";
+import { CheckCircle2, Loader2, Mail } from 'lucide-react';
+import { useToast } from "@/hooks/use-toast";
+import hitfileLogo from "@/assets/hitfile-logo.svg.asset.json";
+
+const OrderSuccessHit = () => {
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(true);
+  const [orderDetails, setOrderDetails] = useState<any>(null);
+
+  const stateOrderId = location.state?.orderId;
+  const queryOrderId = searchParams.get('id');
+  const orderId = stateOrderId || queryOrderId;
+
+  useEffect(() => {
+    const fetchOrderDetails = async () => {
+      if (!orderId) {
+        setIsLoading(false);
+        return;
+      }
+      try {
+        const { data, error } = await supabase
+          .from('orders')
+          .select('*, order_items(*)')
+          .eq('id', orderId)
+          .maybeSingle();
+
+        if (error) throw error;
+
+        if (data) {
+          setOrderDetails(data);
+          if (data.status === 'pending') {
+            await supabase.from('orders').update({ status: 'completed' }).eq('id', orderId);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching order details:', error);
+        toast({
+          title: "Error retrieving order",
+          description: "There was an issue retrieving your order details.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchOrderDetails();
+  }, [orderId, toast]);
+
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4 py-12">
+      <div className="mb-8">
+        <img
+          src={hitfileLogo.url}
+          alt="Hitfile"
+          className="h-10"
+        />
+      </div>
+
+      <div className="w-full max-w-3xl">
+        {isLoading ? (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
+            <Loader2 className="h-10 w-10 animate-spin mx-auto text-blue-600 mb-4" />
+            <p className="text-gray-600">Loading order details...</p>
+          </div>
+        ) : (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 md:p-12 text-center">
+            <div className="flex justify-center mb-6">
+              <div className="h-20 w-20 rounded-full bg-green-50 flex items-center justify-center">
+                <CheckCircle2 className="h-12 w-12 text-green-500" strokeWidth={2} />
+              </div>
+            </div>
+
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
+              Payment successful!
+            </h1>
+
+            <p className="text-gray-600 max-w-xl mx-auto mb-8 leading-relaxed">
+              Your payment has been processed successfully. We will automatically send your order
+              details to your email in the next few minutes. Please also check your Spam folder —
+              sometimes emails end up there.
+            </p>
+
+            {orderId && (
+              <div className="bg-gray-50 rounded-xl p-4 mb-6 inline-block">
+                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Order ID</p>
+                <p className="font-mono text-sm text-gray-800">{orderId}</p>
+              </div>
+            )}
+
+            {orderDetails?.order_items?.length > 0 && (
+              <div className="mb-8 text-left">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500 mb-3">
+                  Order summary
+                </h2>
+                <div className="divide-y divide-gray-100 border border-gray-100 rounded-xl overflow-hidden">
+                  {orderDetails.order_items.map((item: any) => (
+                    <div key={item.id} className="p-4 flex items-center justify-between bg-white">
+                      <div>
+                        <p className="font-medium text-gray-900">{item.service_title}</p>
+                        <p className="text-sm text-gray-500">{item.option_name}</p>
+                      </div>
+                      <p className="font-semibold text-blue-600">
+                        ${Number(item.price).toFixed(2)}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="border-t border-gray-100 pt-6 mt-2">
+              <p className="text-sm text-gray-500 flex items-center justify-center gap-2">
+                <Mail className="h-4 w-4" />
+                If you don't receive the email within 4 hours, contact support@hitfile.net
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default OrderSuccessHit;
