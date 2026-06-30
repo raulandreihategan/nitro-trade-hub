@@ -3,7 +3,7 @@ import { useLocation, useSearchParams } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
 import { CheckCircle2, Loader2, Mail } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
-import turbobitLogo from "@/assets/turbobit-logo.svg.asset.json";
+const turbobitLogo = { url: "/brand/turbobit-logo.svg" };
 
 const OrderSuccessTurbo = () => {
   const location = useLocation();
