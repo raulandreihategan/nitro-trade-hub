@@ -16,6 +16,8 @@ import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
 import CheckoutFailed from "./pages/CheckoutFailed";
 import OrderSuccess from "./pages/OrderSuccess";
+import OrderSuccessHit from "./pages/OrderSuccessHit";
+import OrderFailedHit from "./pages/OrderFailedHit";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import FAQ from "./pages/FAQ";
 import TermsOfService from "./pages/TermsOfService";
