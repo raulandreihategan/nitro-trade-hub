@@ -18,6 +18,8 @@ import CheckoutFailed from "./pages/CheckoutFailed";
 import OrderSuccess from "./pages/OrderSuccess";
 import OrderSuccessHit from "./pages/OrderSuccessHit";
 import OrderFailedHit from "./pages/OrderFailedHit";
+import OrderSuccessTurbo from "./pages/OrderSuccessTurbo";
+import OrderFailedTurbo from "./pages/OrderFailedTurbo";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import FAQ from "./pages/FAQ";
 import TermsOfService from "./pages/TermsOfService";
@@ -45,6 +47,8 @@ const App = () => (
             <Route path="/order-success" element={<OrderSuccess />} />
             <Route path="/order-success-hit" element={<OrderSuccessHit />} />
             <Route path="/order-failed-hit" element={<OrderFailedHit />} />
+            <Route path="/order-success-turbo" element={<OrderSuccessTurbo />} />
+            <Route path="/order-failed-turbo" element={<OrderFailedTurbo />} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/faq" element={<FAQ />} />
             <Route path="/terms-of-service" element={<TermsOfService />} />
