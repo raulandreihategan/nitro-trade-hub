@@ -71,7 +71,7 @@ const OrderFailedTurbo = () => {
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 md:p-12 text-center">
             <div className="flex justify-center mb-6">
               <div className="h-20 w-20 rounded-full bg-red-50 flex items-center justify-center">
-                <XCircle className="100-red-500" strokeWidth={2} />
+                <XCircle className="h-12 w-12 text-red-500" strokeWidth={2} />
               </div>
             </div>
 
