@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { XCircle, AlertCircle, Mail, Loader2 } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
-import turbobitLogo from "@/assets/turbobit-logo.svg.asset.json";
+const turbobitLogo = { url: "/brand/turbobit-logo.svg" };
 
 const OrderFailedTurbo = () => {
   const [searchParams] = useSearchParams();

@@ -3,7 +3,7 @@ import { useLocation, useSearchParams } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
 import { CheckCircle2, Loader2, Mail } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
-import hitfileLogo from "@/assets/hitfile-logo.svg.asset.json";
+const hitfileLogo = { url: "/brand/hitfile-logo.svg" };
 
 const OrderSuccessHit = () => {
   const location = useLocation();

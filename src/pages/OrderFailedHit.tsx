@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { XCircle, AlertCircle, Mail, Loader2 } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
-import hitfileLogo from "@/assets/hitfile-logo.svg.asset.json";
+const hitfileLogo = { url: "/brand/hitfile-logo.svg" };
 
 const OrderFailedHit = () => {
   const [searchParams] = useSearchParams();
