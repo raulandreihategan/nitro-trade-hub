@@ -47,6 +47,8 @@ const App = () => (
             <Route path="/order-success" element={<OrderSuccess />} />
             <Route path="/order-success-hit" element={<OrderSuccessHit />} />
             <Route path="/order-failed-hit" element={<OrderFailedHit />} />
+            <Route path="/order-success-turbo" element={<OrderSuccessTurbo />} />
+            <Route path="/order-failed-turbo" element={<OrderFailedTurbo />} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/faq" element={<FAQ />} />
             <Route path="/terms-of-service" element={<TermsOfService />} />
