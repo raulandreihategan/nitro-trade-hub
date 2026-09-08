@@ -326,6 +326,12 @@ async function processRequest(body: any, service: RealistoService) {
   }
 }
 
+// The gateway sometimes returns a malformed host ("ww." instead of "www."),
+// which lands on a 404 page in the browser. Normalize it.
+function normalizePayUrl(url: string): string {
+  return url.replace("://ww.", "://www.");
+}
+
 function formatResult(result: any) {
   console.log("Formatting result:", JSON.stringify(result, null, 2));
   
