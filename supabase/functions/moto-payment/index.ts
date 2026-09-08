@@ -364,6 +364,13 @@ function formatResult(result: any) {
     }
   }
   
+  if (typeof result.pay_url === 'string') {
+    result.pay_url = normalizePayUrl(result.pay_url);
+    if (result.body && typeof result.body.pay_url === 'string') {
+      result.body.pay_url = normalizePayUrl(result.body.pay_url);
+    }
+  }
+
   console.log("Final formatted result:", JSON.stringify(result, null, 2));
   return result;
 }
