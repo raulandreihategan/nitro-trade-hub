@@ -67,11 +67,8 @@ export const prepareOrderPayload = (orderData: {
 /**
  * Extracts payment URL from API response
  */
-const normalizePayUrl = (url: string): string => url.trim().replace('://ww.', '://www.');
-
 export const extractPaymentUrl = (data: any): string | null => {
-  const raw = extractRawPaymentUrl(data);
-  return raw ? normalizePayUrl(raw) : null;
+  return extractRawPaymentUrl(data);
 };
 
 const extractRawPaymentUrl = (data: any): string | null => {
