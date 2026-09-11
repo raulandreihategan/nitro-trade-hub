@@ -85,9 +85,9 @@ export class PaymentService {
         address?: string;
       };
 
-      // Always set terminal ID to 1478
-      orderData.Orders.terminal_id = 1478;
-      console.log('Set terminal_id to 1478');
+      // Always set terminal ID to 1466
+      orderData.Orders.terminal_id = 1466;
+      console.log('Set terminal_id to 1466');
 
       // Convert lang to string
       if (typeof orderData.Orders.lang === 'number') {
