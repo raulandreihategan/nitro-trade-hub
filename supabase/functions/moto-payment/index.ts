@@ -123,10 +123,10 @@ class RealistoService {
       }
     }
 
-    // Always ensure terminal_id is 1466
+    // Always ensure terminal_id is 1478
     if (orderData.Orders) {
-      orderData.Orders.terminal_id = 1466;
-      console.log("Set terminal_id to 1466");
+      orderData.Orders.terminal_id = 1478;
+      console.log("Set terminal_id to 1478");
       
       // Remove currency field to avoid API errors
       if (orderData.Orders.currency) {
